@@ -1,6 +1,6 @@
 
 const getUserByEmail = `
-  SELECT * FROM "User" WHERE email = $1;
+  SELECT * FROM "users" WHERE email = $1;
 `;
 
 const getAdminByEmail = `

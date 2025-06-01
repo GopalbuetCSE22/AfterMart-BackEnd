@@ -8,7 +8,7 @@ const {
   getDeliveryByCompanyNameAndTradeLicense,
 } = require('../queries/authQueries');
 
-const SECRET_KEY = "PASSword"; 
+const SECRET_KEY = "PASSword";
 
 async function userLogin(req, res) {
   const { email, password } = req.body;
@@ -22,6 +22,9 @@ async function userLogin(req, res) {
     }
 
     const isPasswordValid = bcrypt.compareSync(password, user.password);
+
+    console.log(password, user.password, isPasswordValid);
+
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -44,6 +47,8 @@ async function adminLogin(req, res) {
   try {
     const { rows } = await pool.query(getAdminByEmail, [email]);
     const admin = rows[0];
+    // console.log(admin);
+    
 
     if (!admin) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -55,11 +60,15 @@ async function adminLogin(req, res) {
     }
 
     const token = jwt.sign(
-      { id: admin.user_id, email: admin.email },
+      { id: admin.admin_id, email: admin.email },
       SECRET_KEY,
       { expiresIn: '1h' }
     );
-    res.status(200).json({ token });
+    // After successful login ,store the admin_id in localStorage for later use
+    // localStorage.setItem("admin_id", response.data.admin.admin_id);
+    // console.log("Admin ID:", admin.user_id);
+    // res.status(200).json({ token });
+    res.status(200).json({ token, admin_id: admin.admin_id });
   } catch (error) {
     console.error('adminLogin error:', error);
     res.status(500).json({ error: 'Internal server error' });

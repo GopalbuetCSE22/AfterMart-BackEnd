@@ -22,10 +22,14 @@ async function registerUser(req, res) {
     area,
     house_and_road,
   } = req.body;
-
+  console.log('registerUser body:', req.body);
+  
   try {
     // Check if user with the same email already exists
+    console.log("Gopal checking for existing user with email:", email);
+    
     const userCheck = await pool.query(getUserByEmail, [email]);
+    console.log('User check result:', userCheck.rows);
     if (userCheck.rows.length > 0) {
       return res.status(409).json({ message: 'User with this email already exists' });
     }
@@ -53,6 +57,8 @@ async function registerUser(req, res) {
       addressId,
       house_and_road,
     ]);
+    console.log(name, email, phone, hashedPassword, addressId, house_and_road);
+    
 
     return res.status(200).json({ message: 'User registered successfully' });
   } catch (error) {

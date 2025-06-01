@@ -1,5 +1,5 @@
 const getUserByEmail = `
-  SELECT * FROM "User"
+  SELECT * FROM "users"
   WHERE email = $1
   LIMIT 1;
 `;
@@ -17,17 +17,17 @@ const insertAddress = `
 `;
 
 const insertUser = `
-  INSERT INTO "User" (name, email, phone, password, address_id, house_and_road)
-  VALUES ($1, $2, $3, $4, $5, $6);
+  INSERT INTO "users" (name, email, phone, password, address_id, house_and_road)
+  VALUES ($1, $2, $3, $4, $5, $6)
 `;
 
 const getUnverifiedUsers = `
-  SELECT * FROM "User"
+  SELECT * FROM "users"
   WHERE isverified = false;
 `;
 
 const verifyUserById = `
-  UPDATE "User"
+  UPDATE "users"
   SET isverified = true
   WHERE user_id = $1;
 `;

@@ -1,11 +1,11 @@
 
 const getUnverifiedUsers = `
-  SELECT * FROM "User"
+  SELECT * FROM "users"
   WHERE isverified = false;
 `;
 
 const verifyUserById = `
-  UPDATE "User"
+  UPDATE "users"
   SET isverified = true
   WHERE user_id = $1;
 `;

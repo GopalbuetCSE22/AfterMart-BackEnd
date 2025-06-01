@@ -51,14 +51,14 @@ async function getDeliveryServicesToVerify(req, res) {
 // for admin
 async function verifyDeliveryService(req, res) {
   const companyId = req.params.id;
-  const { adminId } = req.body;
+  const { admin_id } = req.body;
 
-  if (!adminId) {
+  if (!admin_id) {
     return res.status(400).json({ error: 'adminId is required to verify delivery service' });
   }
 
   try {
-    await pool.query(verifyDeliveryServiceById, [companyId, adminId]);
+    await pool.query(verifyDeliveryServiceById, [companyId, admin_id]);
     res.status(200).json({ message: 'Delivery company verified successfully' });
   } catch (error) {
     console.error('verifyDeliveryService error:', error);
