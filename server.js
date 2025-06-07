@@ -18,11 +18,20 @@ const deliveryRoutes = require('./routes/deliveryRoutes.js');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 
+const productRoutes = require('./routes/productRoute.js');
+const purchaseroutes = require('./routes/purchaseRoute.js');
+const shipmentRoutes = require('./routes/shipmentRoutes.js');
+const imageUploadRoute = require('./routes/imageUploadRoute.js');
+
 // connecting to routes
 app.use('/api/users', userRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/purchase', purchaseroutes);
+app.use("/api/shipment", shipmentRoutes);
+app.use('/api/uploadImage', imageUploadRoute);
 
 
 app.get('/', (req, res) => {

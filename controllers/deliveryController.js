@@ -6,6 +6,7 @@ const {
   getUnverifiedDeliveryServices,
   verifyDeliveryServiceById,
   getDeliveryServiceByCompanyAndTrade,
+  createDeliveryManQuery
 } = require('../queries/deliveryQueries');
 
 // Register a new delivery company
@@ -66,8 +67,29 @@ async function verifyDeliveryService(req, res) {
   }
 }
 
+async function createDeliveryMan(req, res) {
+  const { company_id, name, phone, email, password, vehicle_type } = req.body;
+  if (!company_id || !name || !phone || !email || !password || !vehicle_type) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  console.log('createDeliveryMan called with:', { company_id, name, phone, email, password, vehicle_type });
+  
+  try {
+    await pool.query(createDeliveryManQuery, [company_id, name, phone, email, password, vehicle_type]);
+    res.status(201).json({ message: "DeliveryMan created successfully" });
+  } catch (error) {
+    console.error('createDeliveryMan error:', error);
+    res.status(500).json({
+      error: 'Failed to create delivery man'
+    });
+  }
+}
+
+// ...existing code...
+
 module.exports = {
   registerDeliveryService,
   getDeliveryServicesToVerify,
   verifyDeliveryService,
+  createDeliveryMan
 };
