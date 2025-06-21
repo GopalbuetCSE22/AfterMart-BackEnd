@@ -34,7 +34,7 @@ async function buyProduct(req, res) {
 }
 
 
-async function getProductById(req, res) {
+async function getProductByIdAgain(req, res) {
   const productId = req.params.id;
   console.log('getProductById called with productId:', productId);
   try {
@@ -47,5 +47,5 @@ async function getProductById(req, res) {
   }
 }
 module.exports = {
-    buyProduct,getProductById
+    buyProduct,getProductByIdAgain
 };

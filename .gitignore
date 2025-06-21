@@ -1,0 +1,2 @@
+# Ignore Google service account credentials
+Backend_SERVER/service-account.json

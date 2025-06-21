@@ -1,5 +1,5 @@
 const express = require('express');
-const { buyProduct, getProductById } = require('../controllers/prouctBuyingController');
+const { buyProduct, getProductByIdAgain } = require('../controllers/prouctBuyingController');
 const {
     addProduct,
     getOwnProducts,

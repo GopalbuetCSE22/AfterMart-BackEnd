@@ -13,7 +13,7 @@ const {
   getWishlistProductsQuery,
   addToWishlistQuery,
   removeFromWishlistQuery
-} = require('../queries/productQueries');
+} = require('../queries/productBuyingQueries');
 
 async function addProduct(req, res) {
     const { title, description, price, usedFor, categoryId, sellerId, deliveryMode } = req.body;
