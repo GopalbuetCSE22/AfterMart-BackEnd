@@ -1,4 +1,3 @@
-// controllers/productController.js
 const pool = require('../db/pool');
 const {
   addProductQuery,
@@ -8,41 +7,34 @@ const {
   updateProductQuery,
   deleteProductQuery,
   getProductsByCategoryQuery,
-  searchProductsQuery,
   getRecentProductsQuery,
   getWishlistProductsQuery,
   addToWishlistQuery,
-  removeFromWishlistQuery
+  removeFromWishlistQuery,
+  searchProductsAdvancedQuery
 } = require('../queries/productQueries');
 
 async function addProduct(req, res) {
-    const { title, description, price, usedFor, categoryId, sellerId, deliveryMode } = req.body;
-  
-    if (!title || !description || !price || !usedFor || !categoryId || !sellerId || !deliveryMode) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-  
-    try {
-      const result = await pool.query(addProductQuery, [
-        title,
-        description,
-        price,
-        usedFor,
-        categoryId,
-        sellerId,
-        deliveryMode
-      ]);
-  
-      res.status(201).json({ message: 'Product added successfully', productId: result.rows[0].product_id });
-    } catch (error) {
-      console.error('addProduct error:', error);
-      res.status(500).json({ error: 'Failed to add product' });
-    }
+  const { title, description, price, usedFor, categoryId, sellerId, deliveryMode } = req.body;
+  if (!title || !description || !price || !usedFor || !categoryId || !sellerId || !deliveryMode) {
+    return res.status(400).json({ error: 'All fields are required' });
   }
 
+  try {
+    const result = await pool.query(addProductQuery, [
+      title, description, price, usedFor, categoryId, sellerId, deliveryMode
+    ]);
+    res.status(201).json({ message: 'Product added successfully', productId: result.rows[0].product_id });
+  } catch (error) {
+    console.error('addProduct error:', error);
+    res.status(500).json({ error: 'Failed to add product' });
+  }
+}
 
 async function getOwnProducts(req, res) {
   const sellerId = req.query.seller_id;
+  if (!sellerId) return res.status(400).json({ error: 'user ID is required' });
+
   try {
     const result = await pool.query(getOwnProductsQuery, [sellerId]);
     res.status(200).json(result.rows);
@@ -51,15 +43,17 @@ async function getOwnProducts(req, res) {
     res.status(500).json({ error: 'Failed to fetch own products' });
   }
 }
+
 async function getAllProducts(req, res) {
-    try {
-        const result = await pool.query(getAllProductsQuery);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error('getAllProducts error:', error);
-        res.status(500).json({ error: 'Failed to fetch products' });
-    }
+  try {
+    const result = await pool.query(getAllProductsQuery);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('getAllProducts error:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
 }
+
 async function getProductById(req, res) {
   const productId = req.params.id;
   try {
@@ -73,37 +67,29 @@ async function getProductById(req, res) {
 }
 
 async function updateProduct(req, res) {
-    const productId = req.params.id;
-    const { title, description, price, usedFor, categoryId, deliveryMode, sellerId } = req.body;
-  
-    if (!title || !description || !price || !usedFor || !categoryId || !deliveryMode || !sellerId) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-  
-    try {
-      await pool.query(updateProductQuery, [
-        title,
-        description,
-        price,
-        usedFor,
-        categoryId,
-        deliveryMode,
-        productId,
-        sellerId
-      ]);
-  
-      res.status(200).json({ message: 'Product updated successfully' });
-    } catch (error) {
-      console.error('updateProduct error:', error);
-      res.status(500).json({ error: 'Failed to update product' });
-    }
+  const productId = req.params.id;
+  const { title, description, price, usedFor, categoryId, deliveryMode, sellerId } = req.body;
+
+  if (!title || !description || !price || !usedFor || !categoryId || !deliveryMode || !sellerId) {
+    return res.status(400).json({ error: 'All fields are required' });
   }
-  
+
+  try {
+    await pool.query(updateProductQuery, [
+      title, description, price, usedFor, categoryId, deliveryMode, productId, sellerId
+    ]);
+    res.status(200).json({ message: 'Product updated successfully' });
+  } catch (error) {
+    console.error('updateProduct error:', error);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+}
 
 async function deleteProduct(req, res) {
   const productId = req.params.id;
+  const userId = req.body.userId;
   try {
-    await pool.query(deleteProductQuery, [productId]);
+    await pool.query(deleteProductQuery, [productId, userId]);
     res.status(200).json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('deleteProduct error:', error);
@@ -112,9 +98,34 @@ async function deleteProduct(req, res) {
 }
 
 async function searchProducts(req, res) {
-  const searchTerm = req.query.q || '';
+  const {
+    q = '',
+    userId,
+    category,
+    minPrice,
+    maxPrice,
+    usedFor,
+    division,
+    district,
+    ward,
+    area
+  } = req.query;
+
+  if (!userId) return res.status(400).json({ error: 'User ID is required for location-based search' });
+
   try {
-    const result = await pool.query(searchProductsQuery, [`%${searchTerm}%`]);
+    const result = await pool.query(searchProductsAdvancedQuery, [
+      `%${q}%`,
+      userId,
+      category || null,
+      minPrice || 0,
+      maxPrice || 10000000,
+      usedFor || null,
+      division || null,
+      district || null,
+      ward || null,
+      area || null
+    ]);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('searchProducts error:', error);
@@ -190,6 +201,6 @@ module.exports = {
   getProductsByCategory,
   getWishlist,
   addToWishlist,
-    removeFromWishlist,
-    getAllProducts
+  removeFromWishlist,
+  getAllProducts
 };

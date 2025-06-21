@@ -1,4 +1,3 @@
-// routes/productRoutes.js
 const express = require('express');
 const router = express.Router();
 
@@ -13,7 +12,7 @@ const {
   getProductsByCategory,
   addToWishlist,
   removeFromWishlist,
-    getWishlist,
+  getWishlist,
   getAllProducts
 } = require('../controllers/productController');
 
@@ -33,7 +32,7 @@ router.patch('/:id', updateProduct);
 // Delete a product
 router.delete('/:id', deleteProduct);
 
-// Search/filter products
+// ✅ Search and filter products
 router.get('/search/all', searchProducts);
 
 // Get recent products

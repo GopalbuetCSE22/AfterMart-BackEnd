@@ -17,12 +17,14 @@ const userRoutes = require('./routes/userRoutes.js');
 const deliveryRoutes = require('./routes/deliveryRoutes.js');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes.js');
 
 // connecting to routes
 app.use('/api/users', userRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 
 app.get('/', (req, res) => {

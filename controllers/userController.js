@@ -69,6 +69,7 @@ async function registerUser(req, res) {
 
 // Admin: Get all unverified users
 async function getUsersToVerify(req, res) {
+  console.log('Fetching unverified users');
   try {
     const users = await pool.query(getUnverifiedUsers);
     res.status(200).json(users.rows);
