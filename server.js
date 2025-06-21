@@ -17,6 +17,7 @@ const userRoutes = require('./routes/userRoutes.js');
 const deliveryRoutes = require('./routes/deliveryRoutes.js');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes.js');
 
 const productRoutes = require('./routes/productRoute.js');
 const purchaseroutes = require('./routes/purchaseRoute.js');
@@ -29,9 +30,12 @@ app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+<<<<<<< HEAD
 app.use('/api/purchase', purchaseroutes);
 app.use("/api/shipment", shipmentRoutes);
 app.use('/api/uploadImage', imageUploadRoute);
+=======
+>>>>>>> a6c9faa133c0723845e01934f1b6bf806f14083f
 
 
 app.get('/', (req, res) => {
