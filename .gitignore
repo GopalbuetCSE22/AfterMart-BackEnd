@@ -1,2 +1,4 @@
 # Ignore Google service account credentials
-Backend_SERVER/service-account.json
+service-account.json
+.env
+/node_modules
