@@ -34,8 +34,16 @@ const getDeliveryServiceByCompanyAndTrade = `
 
 const createDeliveryManQuery = `
   INSERT INTO delivery_man (company_id, name, phone, email, password, vehicle_type)
-  VALUES ($1, $2, $3, $4, $5, $6)`
-  
+  VALUES ($1, $2, $3, $4, $5, $6)
+  RETURNING deliveryman_id;`
+
+// const showDeliveryManUnderCompanyIdQuery = `SELECT * FROM delivery_man WHERE company_id = $1`;
+
+const showDeliveryManUnderCompanyIdQuery = `SELECT * FROM delivery_man d 
+LEFT OUTER JOIN deliverymanprefarea df on df.deliveryman_id = d.deliveryman_id 
+LEFT OUTER JOIN address A on A.address_id = df.address_id 
+WHERE d.company_id = $1`
+
 module.exports = {
   findAddress,
   insertAddress,
@@ -43,5 +51,6 @@ module.exports = {
   getUnverifiedDeliveryServices,
   verifyDeliveryServiceById,
   getDeliveryServiceByCompanyAndTrade,
-  createDeliveryManQuery
+  createDeliveryManQuery,
+  showDeliveryManUnderCompanyIdQuery
 };

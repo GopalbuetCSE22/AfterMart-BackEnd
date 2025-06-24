@@ -6,6 +6,7 @@ const {
   getUserByEmail,
   getAdminByEmail,
   getDeliveryByCompanyNameAndTradeLicense,
+  getDeliveryManByEmail
 } = require('../queries/authQueries');
 
 const SECRET_KEY = "PASSword";
@@ -94,9 +95,37 @@ async function deliveryServiceLogin(req, res) {
       SECRET_KEY,
       { expiresIn: '1h' }
     );
-    res.status(200).json({ token });
+
+    res.status(200).json({ token, company_id: deliveryCompany.company_id });
   } catch (error) {
     console.error('deliveryServiceLogin error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function deliveryManlogin(req, res) {
+  const { email, password } = req.body;
+  try {
+    const { rows } = await pool.query(getDeliveryManByEmail, [email]);
+    const user = rows[0];
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const isPasswordValid = user.password == password;
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    const token = jwt.sign(
+      { id: user.deliveryman_id, email: user.email },
+      SECRET_KEY,
+      { expiresIn: '1h' }
+    );
+    res.status(200).json({ token, deliveryman_id: user.deliveryman_id });
+  } catch (error) {
+    console.error('userLogin error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -105,4 +134,5 @@ module.exports = {
   userLogin,
   adminLogin,
   deliveryServiceLogin,
+  deliveryManlogin
 };

@@ -6,7 +6,8 @@ const {
   getUnverifiedDeliveryServices,
   verifyDeliveryServiceById,
   getDeliveryServiceByCompanyAndTrade,
-  createDeliveryManQuery
+  createDeliveryManQuery,
+  showDeliveryManUnderCompanyIdQuery
 } = require('../queries/deliveryQueries');
 
 // Register a new delivery company
@@ -68,15 +69,41 @@ async function verifyDeliveryService(req, res) {
 }
 
 async function createDeliveryMan(req, res) {
-  const { company_id, name, phone, email, password, vehicle_type } = req.body;
-  if (!company_id || !name || !phone || !email || !password || !vehicle_type) {
+  const { company_id, name, phone, email, password, vehicle_type, division, district, ward, area } = req.body;
+
+  if (!company_id || !name || !phone || !email || !password || !vehicle_type || !division || !district || !ward || !area) {
     return res.status(400).json({ error: 'All fields are required' });
   }
   console.log('createDeliveryMan called with:', { company_id, name, phone, email, password, vehicle_type });
-  
+
   try {
-    await pool.query(createDeliveryManQuery, [company_id, name, phone, email, password, vehicle_type]);
-    res.status(201).json({ message: "DeliveryMan created successfully" });
+    const deliveryManResult = await pool.query(createDeliveryManQuery, [company_id, name, phone, email, password, vehicle_type]);
+    // res.status(201).json({ message: "DeliveryMan created successfully" });
+
+    const currentDeliveryManID = deliveryManResult.rows[0].deliveryman_id;
+    console.log(currentDeliveryManID);
+
+    // We have to create a address and then assigned it to the deliverymanPrefAreaTable 
+    // We need addressId , currentDeliveryManID ,
+
+    //!create address
+    let addressIdforDeliveryMan;
+    const addressCheck = await pool.query(findAddress, [division, district, ward, area]);
+
+    if (addressCheck.rows.length > 0) {
+      addressIdforDeliveryMan = addressCheck.rows[0].address_id;
+    } else {
+      const addressInsert = await pool.query(insertAddress, [division, district, ward, area]);
+      addressIdforDeliveryMan = addressInsert.rows[0].address_id;
+    }
+
+    // insert data to the pref area
+    await pool.query(`INSERT INTO deliverymanprefarea (address_id , deliveryman_id) VALUES ($1 , $2)`, [addressIdforDeliveryMan, currentDeliveryManID]);
+
+    res.status(201).json({
+      message: "DeliveryMan created and preferred area assigned successfully",
+      deliveryman_id: currentDeliveryManID
+    });
   } catch (error) {
     console.error('createDeliveryMan error:', error);
     res.status(500).json({
@@ -85,11 +112,26 @@ async function createDeliveryMan(req, res) {
   }
 }
 
+async function showDeliveryManUnderCompanyId(req, res) {
+  const companyId = req.params.company_id;
+  console.log(companyId);
+  try {
+    const result = await pool.query(showDeliveryManUnderCompanyIdQuery, [companyId]);
+    res.status(200).json(result.rows);
+  }
+  catch (error) {
+    console.error('showDeliveryManUnderCompanyId error:', error);
+    res.status(500).json({
+      error: 'Failed to show showDeliveryManUnderCompanyId'
+    });
+  }
+}
 // ...existing code...
 
 module.exports = {
   registerDeliveryService,
   getDeliveryServicesToVerify,
   verifyDeliveryService,
-  createDeliveryMan
+  createDeliveryMan,
+  showDeliveryManUnderCompanyId
 };
