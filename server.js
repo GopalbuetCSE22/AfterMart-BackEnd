@@ -30,6 +30,7 @@ app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/purchase', purchaseroutes);
 app.use("/api/shipment", shipmentRoutes);
 app.use('/api/uploadImage', imageUploadRoute);

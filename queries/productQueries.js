@@ -22,34 +22,82 @@ const searchProductsQuery = `
 `;
 
 const searchProductsAdvancedQuery = `
-  WITH user_address AS (
-    SELECT * FROM address
-    WHERE user_id = $2
-    LIMIT 1
-  )
-  SELECT p.*, a.*, c.name AS category_name,
-    CASE
-      WHEN a.area = ua.area THEN 1
-      WHEN a.ward = ua.ward THEN 2
-      WHEN a.district = ua.district THEN 3
-      WHEN a.division = ua.division THEN 4
-      ELSE 5
-    END AS distance_level
-  FROM product p
-  JOIN address a ON p.seller_id = a.user_id
-  JOIN user_address ua ON true
-  JOIN product_category c ON p.category_id = c.category_id
-  WHERE
-    (p.title ILIKE $1 OR p.description ILIKE $1 OR c.name ILIKE $1)
-    AND ($3::text IS NULL OR c.name ILIKE $3)
-    AND p.price BETWEEN $4 AND $5
-    AND ($6::text IS NULL OR p.used_for = $6)
-    AND ($7::text IS NULL OR a.division ILIKE $7)
-    AND ($8::text IS NULL OR a.district ILIKE $8)
-    AND ($9::text IS NULL OR a.ward ILIKE $9)
-    AND ($10::text IS NULL OR a.area ILIKE $10)
-    AND p.isapproved = TRUE AND p.isavailable = TRUE
-  ORDER BY distance_level, p.created_at DESC;
+ SELECT
+  p.product_id,
+  p.title,
+  p.description,
+  p.price,
+  p.used_for,
+  p.category_id,
+  p.seller_id,
+  p.buyer_id,
+  p.isapproved,
+  p.approved_by,
+  p.isavailable,
+  p.showPhoneNumber,
+  p.posted_at,
+  p.delivery_mode,
+
+  -- Seller info
+  u.name AS seller_name,
+
+  -- Seller address info
+  addr.division,
+  addr.district,
+  addr.ward,
+  addr.area,
+
+  -- Relevance score for ranking
+  ts_rank(
+    to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name),
+    plainto_tsquery('english', $1)
+  ) AS rank,
+
+  -- Proximity level: 1=area, 2=ward, 3=district, 4=division, 5=no match
+  CASE
+    WHEN ua.area IS NOT NULL AND addr.area = ua.area THEN 1
+    WHEN ua.ward IS NOT NULL AND addr.ward = ua.ward THEN 2
+    WHEN ua.district IS NOT NULL AND addr.district = ua.district THEN 3
+    WHEN ua.division IS NOT NULL AND addr.division = ua.division THEN 4
+    ELSE 5
+  END AS distance_level
+
+FROM product p
+
+-- Seller info
+JOIN "User" u ON u.user_id = p.seller_id
+
+-- Seller address
+JOIN address addr ON u.address_id = addr.address_id
+
+-- Category (used in search and filters)
+JOIN productcategory c ON p.category_id = c.category_id
+
+-- Current user's address for proximity match
+LEFT JOIN "User" u2 ON u2.user_id = $2
+LEFT JOIN address ua ON u2.address_id = ua.address_id
+
+WHERE
+  -- Full-text keyword match (title + description + category)
+  to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name)
+    @@ plainto_tsquery('english', $1)
+
+  -- Optional filters
+  AND ($3::text IS NULL OR c.name ILIKE $3)
+  AND p.price BETWEEN $4 AND $5
+  AND ($6::text IS NULL OR p.used_for = $6)
+  AND ($7::text IS NULL OR addr.division ILIKE $7)
+  AND ($8::text IS NULL OR addr.district ILIKE $8)
+  AND ($9::text IS NULL OR addr.ward ILIKE $9)
+  AND ($10::text IS NULL OR addr.area ILIKE $10)
+  AND p.isapproved = TRUE
+  AND p.isavailable = TRUE
+
+ORDER BY
+  distance_level,
+  rank DESC,
+  p.posted_at DESC;
+
 `;
 
 const getRecentProductsQuery = `
@@ -80,14 +128,16 @@ const getOwnProductsQuery = `
 
 const updateProductQuery = `
   UPDATE product
-  SET title = $1,
-      description = $2,
-      price = $3,
-      used_for = $4,
-      category_id = $5,
-      delivery_mode = $6
+  SET
+    title = COALESCE($1, title),
+    description = COALESCE($2, description),
+    price = COALESCE($3, price),
+    used_for = COALESCE($4, used_for),
+    category_id = COALESCE($5, category_id),
+    delivery_mode = COALESCE($6, delivery_mode)
   WHERE product_id = $7 AND seller_id = $8;
 `;
+
 
 const deleteProductQuery = `
   DELETE FROM product

@@ -3,6 +3,7 @@ const pool = require('../db/pool');
 const { getUnverifiedUsers, verifyUserById } = require('../queries/adminQueries');
 
 async function getUsersToVerify(req, res) {
+  console.log('getUsersToVerify called');
   try {
     const users = await pool.query(getUnverifiedUsers);
     res.status(200).json(users.rows);
