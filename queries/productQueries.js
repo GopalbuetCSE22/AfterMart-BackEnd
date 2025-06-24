@@ -106,6 +106,13 @@ const removeFromWishlistQuery = `
   WHERE user_id = $1 AND product_id = $2;
 `;
 
+
+const showProductsToAppoveQuery = `
+  SELECT * FROM product WHERE isapproved = FALSE;
+`
+const verfyProductQuery = `
+  UPDATE product SET isapproved = TRUE WHERE product_id = $1;
+`
 module.exports = {
   getAllProductsQuery,
   getProductByIdQuery,
@@ -120,4 +127,6 @@ module.exports = {
   deleteProductQuery,
   addToWishlistQuery,
   removeFromWishlistQuery,
+  showProductsToAppoveQuery,
+  verfyProductQuery
 };

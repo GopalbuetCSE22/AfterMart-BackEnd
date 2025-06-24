@@ -34,7 +34,7 @@ async function userLogin(req, res) {
       SECRET_KEY,
       { expiresIn: '1h' }
     );
-    res.status(200).json({ token });
+    res.status(200).json({ token, user_id: user.user_id });
   } catch (error) {
     console.error('userLogin error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -48,7 +48,7 @@ async function adminLogin(req, res) {
     const { rows } = await pool.query(getAdminByEmail, [email]);
     const admin = rows[0];
     // console.log(admin);
-    
+
 
     if (!admin) {
       return res.status(401).json({ message: 'Invalid email or password' });

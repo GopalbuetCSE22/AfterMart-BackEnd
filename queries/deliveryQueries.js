@@ -32,6 +32,10 @@ const getDeliveryServiceByCompanyAndTrade = `
   WHERE company_name = $1 AND trade_license = $2;
 `;
 
+const createDeliveryManQuery = `
+  INSERT INTO delivery_man (company_id, name, phone, email, password, vehicle_type)
+  VALUES ($1, $2, $3, $4, $5, $6)`
+  
 module.exports = {
   findAddress,
   insertAddress,
@@ -39,4 +43,5 @@ module.exports = {
   getUnverifiedDeliveryServices,
   verifyDeliveryServiceById,
   getDeliveryServiceByCompanyAndTrade,
+  createDeliveryManQuery
 };
