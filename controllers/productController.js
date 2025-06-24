@@ -135,7 +135,7 @@ async function deleteProduct(req, res) {
 async function searchProducts(req, res) {
   const {
     q = '',
-    userId,
+    userId = null,
     category,
     minPrice,
     maxPrice,
@@ -146,27 +146,31 @@ async function searchProducts(req, res) {
     area
   } = req.query;
 
-  if (!userId) return res.status(400).json({ error: 'User ID is required for location-based search' });
-
   try {
     const result = await pool.query(searchProductsAdvancedQuery, [
-      `%${q}%`,
-      userId,
-      category || null,
-      minPrice || 0,
-      maxPrice || 10000000,
-      usedFor || null,
-      division || null,
-      district || null,
-      ward || null,
-      area || null
+      `%${q}%`,               // $1: search keyword
+      userId,                 // $2: userId for proximity
+      category || null,       // $3
+      minPrice || 0,          // $4
+      maxPrice || 10000000,   // $5
+      usedFor || null,        // $6
+      division || null,       // $7
+      district || null,       // $8
+      ward || null,           // $9
+      area || null            // $10
     ]);
-    res.status(200).json(result.rows);
+
+    res.status(200).json({
+      proximityUsed: result.rows.some(r => r.distance_level !== null && r.distance_level < 5),
+      products: result.rows
+    });
   } catch (error) {
     console.error('searchProducts error:', error);
     res.status(500).json({ error: 'Failed to search products' });
   }
 }
+
+
 
 async function getRecentProducts(req, res) {
   try {

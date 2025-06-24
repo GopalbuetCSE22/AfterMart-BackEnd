@@ -32,7 +32,7 @@ router.patch('/:id', updateProduct);
 // Delete a product
 router.delete('/:id', deleteProduct);
 
-// ✅ Search and filter products
+//  Search and filter products
 router.get('/search/all', searchProducts);
 
 // Get recent products
