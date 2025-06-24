@@ -38,6 +38,9 @@ const searchProductsAdvancedQuery = `
   p.posted_at,
   p.delivery_mode,
 
+  -- Representative image
+  COALESCE(img.image, 'default_product_image.jpg') AS product_image,
+
   -- Seller info
   u.name AS seller_name,
 
@@ -53,7 +56,7 @@ const searchProductsAdvancedQuery = `
     plainto_tsquery('english', $1)
   ) AS rank,
 
-  -- Proximity level: 1=area, 2=ward, 3=district, 4=division, 5=no match
+  -- Proximity level
   CASE
     WHEN ua.area IS NOT NULL AND addr.area = ua.area THEN 1
     WHEN ua.ward IS NOT NULL AND addr.ward = ua.ward THEN 2
@@ -70,19 +73,24 @@ JOIN "User" u ON u.user_id = p.seller_id
 -- Seller address
 JOIN address addr ON u.address_id = addr.address_id
 
--- Category (used in search and filters)
+-- Category
 JOIN productcategory c ON p.category_id = c.category_id
 
--- Current user's address for proximity match
+-- Optional user's address for proximity
 LEFT JOIN "User" u2 ON u2.user_id = $2
 LEFT JOIN address ua ON u2.address_id = ua.address_id
 
+-- Get one image per product
+LEFT JOIN LATERAL (
+  SELECT pm.image
+  FROM product_media pm
+  WHERE pm.product_id = p.product_id
+  LIMIT 1
+) AS img ON true
+
 WHERE
-  -- Full-text keyword match (title + description + category)
   to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name)
     @@ plainto_tsquery('english', $1)
-
-  -- Optional filters
   AND ($3::text IS NULL OR c.name ILIKE $3)
   AND p.price BETWEEN $4 AND $5
   AND ($6::text IS NULL OR p.used_for = $6)
