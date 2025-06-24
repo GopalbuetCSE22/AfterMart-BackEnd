@@ -25,6 +25,7 @@ app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/categories', require('./routes/categoryRoutes'));
 
 
 app.get('/', (req, res) => {

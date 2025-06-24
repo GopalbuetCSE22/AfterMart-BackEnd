@@ -80,14 +80,16 @@ const getOwnProductsQuery = `
 
 const updateProductQuery = `
   UPDATE product
-  SET title = $1,
-      description = $2,
-      price = $3,
-      used_for = $4,
-      category_id = $5,
-      delivery_mode = $6
+  SET
+    title = COALESCE($1, title),
+    description = COALESCE($2, description),
+    price = COALESCE($3, price),
+    used_for = COALESCE($4, used_for),
+    category_id = COALESCE($5, category_id),
+    delivery_mode = COALESCE($6, delivery_mode)
   WHERE product_id = $7 AND seller_id = $8;
 `;
+
 
 const deleteProductQuery = `
   DELETE FROM product
