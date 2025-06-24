@@ -11,7 +11,9 @@ const {
   getWishlistProductsQuery,
   addToWishlistQuery,
   removeFromWishlistQuery,
-  searchProductsAdvancedQuery
+  searchProductsAdvancedQuery,
+  showProductsToAppoveQuery,
+  verfyProductQuery
 } = require('../queries/productQueries');
 
 async function addProduct(req, res) {
@@ -190,6 +192,27 @@ async function removeFromWishlist(req, res) {
   }
 }
 
+async function showProductsToAppove(req,res) {
+  // the products that are not verified 
+  try {
+    const result = await pool.query(showProductsToAppoveQuery);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('showProductsToAppove error:', error);
+    res.status(500).json({ error: 'Failed to fetch showProductsToAppove' });
+  }
+}
+
+async function verifyProduct(req,res){
+  const productId = req.params.productid;
+  try {
+    await pool.query(verfyProductQuery , [productId]);
+    res.status(200).json({ message: 'Product verified successfully' }); // <-- add this
+  } catch (error) {
+    console.error('verifyProduct error:', error);
+    res.status(500).json({ error: 'Failed to verifyProduct' });
+  }
+}
 module.exports = {
   addProduct,
   getOwnProducts,
@@ -202,5 +225,7 @@ module.exports = {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
-  getAllProducts
+  getAllProducts,
+  showProductsToAppove,
+  verifyProduct
 };

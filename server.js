@@ -34,7 +34,6 @@ app.use('/api/purchase', purchaseroutes);
 app.use("/api/shipment", shipmentRoutes);
 app.use('/api/uploadImage', imageUploadRoute);
 
-
 app.get('/', (req, res) => {
   res.send('AfterMart Backend API is running...');
 });

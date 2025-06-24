@@ -12,13 +12,21 @@ const {
     addToWishlist,
     removeFromWishlist,
     getWishlist,
-    getAllProducts
+    getAllProducts,
+    showProductsToAppove,
+    verifyProduct
 } = require('../controllers/productController');
+const { route } = require('./userRoutes');
 
 const router = express.Router();
 
-// set the buyerid when the product is purchased
+// set the buyerid when the product is purchased 
 router.patch('/buyProduct/:buyerid/:productId', buyProduct);
+
+// http://localhost:5000/api/products/showProductsToApprove
+router.get('/showProductsToApprove', showProductsToAppove);
+
+router.patch('/verifyProduct/:productid', verifyProduct);
 
 // Add a new product
 router.post('/', addProduct);

@@ -44,7 +44,7 @@ async function imageUploader(req, res) {
     const userid = req.params.userid;
 
     console.log(userid);
-    
+
 
     try {
         const driveUrl = await uploadToDrive(file.path, file.originalname);
@@ -63,7 +63,18 @@ async function imageUploader(req, res) {
         res.status(500).send('Upload failed.');
     }
 }
+async function getProfilePicLink(req, res) {
+    const userid = req.params.userid;
+    if (!userid) return res.status(400).json({ error: 'user ID is required' });
 
+    try {
+        const result = await pool.query('SELECT profile_picture FROM "User" WHERE user_id = $1', [userid]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('getOwnProducts error:', error);
+        res.status(500).json({ error: 'Failed to fetch own products' });
+    }
+}
 module.exports = {
-    imageUploader
+    imageUploader,getProfilePicLink
 };
