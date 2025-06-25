@@ -1,19 +1,84 @@
 const getAllProductsQuery = `
-  SELECT * FROM product
-  WHERE isapproved = TRUE AND isavailable = TRUE
-  ORDER BY posted_at DESC;
+  SELECT 
+    p.*, 
+    u.name AS seller_name,
+    u.email AS seller_email,
+    u.phone AS seller_phone,
+    a.area AS seller_area,
+    a.ward AS seller_ward,
+    a.district AS seller_district,
+    a.division AS seller_division,
+    c.name,
+    (
+      SELECT image
+      FROM product_media
+      WHERE product_id = p.product_id
+      ORDER BY media_id ASC
+      LIMIT 1
+    ) AS image
+  FROM product p
+  JOIN "User" u ON p.seller_id = u.user_id
+  LEFT JOIN address a ON u.address_id = a.address_id
+  LEFT JOIN productcategory c ON p.category_id = c.category_id
+  WHERE p.isapproved = TRUE AND p.isavailable = TRUE
+  ORDER BY p.posted_at DESC;
 `;
+
+
 
 const getProductByIdQuery = `
-  SELECT * FROM product
-  WHERE product_id = $1 AND isapproved = TRUE AND isavailable = TRUE;
+  SELECT 
+    p.*, 
+    u.name AS seller_name,
+    u.email AS seller_email,
+    u.phone AS seller_phone,
+    a.area AS seller_area,
+    a.ward AS seller_ward,
+    a.district AS seller_district,
+    a.division AS seller_division,
+    c.name,
+    (
+      SELECT image
+      FROM product_media
+      WHERE product_id = p.product_id
+      ORDER BY media_id ASC
+      LIMIT 1
+    ) AS image
+  FROM product p
+  JOIN "User" u ON p.seller_id = u.user_id
+  LEFT JOIN address a ON u.address_id = a.address_id
+  LEFT JOIN productcategory c ON p.category_id = c.category_id
+  WHERE p.product_id = $1 AND p.isapproved = TRUE AND p.isavailable = TRUE;
 `;
 
+
+
 const getProductsByCategoryQuery = `
-  SELECT * FROM product
-  WHERE category_id = $1 AND isapproved = TRUE AND isavailable= TRUE
-  ORDER BY posted_at DESC;
+  SELECT 
+    p.*, 
+    u.name AS seller_name,
+    u.email AS seller_email,
+    u.phone AS seller_phone,
+    a.area AS seller_area,
+    a.ward AS seller_ward,
+    a.district AS seller_district,
+    a.division AS seller_division,
+    c.name,
+    (
+      SELECT image
+      FROM product_media
+      WHERE product_id = p.product_id
+      ORDER BY media_id ASC
+      LIMIT 1
+    ) AS image
+  FROM product p
+  JOIN "User" u ON p.seller_id = u.user_id
+  LEFT JOIN address a ON u.address_id = a.address_id
+  LEFT JOIN productcategory c ON p.category_id = c.category_id
+  WHERE p.category_id = $1 AND p.isapproved = TRUE AND p.isavailable = TRUE
+  ORDER BY p.posted_at DESC;
 `;
+
 
 const searchProductsQuery = `
   SELECT * FROM product
@@ -22,105 +87,147 @@ const searchProductsQuery = `
 `;
 
 const searchProductsAdvancedQuery = `
- SELECT
-  p.product_id,
-  p.title,
-  p.description,
-  p.price,
-  p.used_for,
-  p.category_id,
-  p.seller_id,
-  p.buyer_id,
-  p.isapproved,
-  p.approved_by,
-  p.isavailable,
-  p.showPhoneNumber,
-  p.posted_at,
-  p.delivery_mode,
+  SELECT
+    p.product_id,
+    p.title,
+    p.description,
+    p.price,
+    p.used_for,
+    p.category_id,
+    p.seller_id,
+    p.buyer_id,
+    p.isapproved,
+    p.approved_by,
+    p.isavailable,
+    p.showPhoneNumber,
+    p.posted_at,
+    p.delivery_mode,
 
-  -- Representative image
-  COALESCE(img.image, 'default_product_image.jpg') AS product_image,
+    -- Representative image
+    COALESCE(img.image, 'default_product_image.jpg') AS image,
+
+    -- Seller info
+    u.name AS seller_name,
+
+    -- Seller address info
+    addr.division,
+    addr.district,
+    addr.ward,
+    addr.area,
+
+    -- Relevance score for ranking
+    ts_rank(
+      to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name),
+      plainto_tsquery('english', $1)
+    ) AS rank,
+
+    -- Proximity level
+    CASE
+      WHEN ua.area IS NOT NULL AND addr.area = ua.area THEN 1
+      WHEN ua.ward IS NOT NULL AND addr.ward = ua.ward THEN 2
+      WHEN ua.district IS NOT NULL AND addr.district = ua.district THEN 3
+      WHEN ua.division IS NOT NULL AND addr.division = ua.division THEN 4
+      ELSE 5
+    END AS distance_level
+
+  FROM product p
 
   -- Seller info
-  u.name AS seller_name,
+  JOIN "User" u ON u.user_id = p.seller_id
 
-  -- Seller address info
-  addr.division,
-  addr.district,
-  addr.ward,
-  addr.area,
+  -- Seller address
+  JOIN address addr ON u.address_id = addr.address_id
 
-  -- Relevance score for ranking
-  ts_rank(
-    to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name),
-    plainto_tsquery('english', $1)
-  ) AS rank,
+  -- Category
+  JOIN productcategory c ON p.category_id = c.category_id
 
-  -- Proximity level
-  CASE
-    WHEN ua.area IS NOT NULL AND addr.area = ua.area THEN 1
-    WHEN ua.ward IS NOT NULL AND addr.ward = ua.ward THEN 2
-    WHEN ua.district IS NOT NULL AND addr.district = ua.district THEN 3
-    WHEN ua.division IS NOT NULL AND addr.division = ua.division THEN 4
-    ELSE 5
-  END AS distance_level
+  -- Optional user's address for proximity
+  LEFT JOIN "User" u2 ON u2.user_id = $2
+  LEFT JOIN address ua ON u2.address_id = ua.address_id
 
-FROM product p
+  -- Get one image per product
+  LEFT JOIN LATERAL (
+    SELECT pm.image
+    FROM product_media pm
+    WHERE pm.product_id = p.product_id
+    LIMIT 1
+  ) AS img ON true
 
--- Seller info
-JOIN "User" u ON u.user_id = p.seller_id
+  WHERE
+    -- This is the crucial change: only apply text search if $1 is not empty
+    ($1 = '' OR to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name) @@ plainto_tsquery('english', $1))
+    AND ($3::text IS NULL OR c.name ILIKE $3)
+    AND p.price BETWEEN $4 AND $5
+    AND ($6::text IS NULL OR p.used_for = $6)
+    AND ($7::text IS NULL OR addr.division ILIKE $7)
+    AND ($8::text IS NULL OR addr.district ILIKE $8)
+    AND ($9::text IS NULL OR addr.ward ILIKE $9)
+    AND ($10::text IS NULL OR addr.area ILIKE $10)
+    AND p.isapproved = TRUE
+    AND p.isavailable = TRUE
 
--- Seller address
-JOIN address addr ON u.address_id = addr.address_id
-
--- Category
-JOIN productcategory c ON p.category_id = c.category_id
-
--- Optional user's address for proximity
-LEFT JOIN "User" u2 ON u2.user_id = $2
-LEFT JOIN address ua ON u2.address_id = ua.address_id
-
--- Get one image per product
-LEFT JOIN LATERAL (
-  SELECT pm.image
-  FROM product_media pm
-  WHERE pm.product_id = p.product_id
-  LIMIT 1
-) AS img ON true
-
-WHERE
-  to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name)
-    @@ plainto_tsquery('english', $1)
-  AND ($3::text IS NULL OR c.name ILIKE $3)
-  AND p.price BETWEEN $4 AND $5
-  AND ($6::text IS NULL OR p.used_for = $6)
-  AND ($7::text IS NULL OR addr.division ILIKE $7)
-  AND ($8::text IS NULL OR addr.district ILIKE $8)
-  AND ($9::text IS NULL OR addr.ward ILIKE $9)
-  AND ($10::text IS NULL OR addr.area ILIKE $10)
-  AND p.isapproved = TRUE
-  AND p.isavailable = TRUE
-
-ORDER BY
-  distance_level,
-  rank DESC,
-  p.posted_at DESC;
-
+  ORDER BY
+    distance_level,
+    rank DESC,
+    p.posted_at DESC;
 `;
-
 const getRecentProductsQuery = `
-  SELECT * FROM product
-  WHERE isapproved = TRUE AND isavailable= TRUE
-  ORDER BY posted_at DESC
-  LIMIT 10;
+  SELECT 
+    p.*, 
+    u.name AS seller_name,
+    u.email AS seller_email,
+    u.phone AS seller_phone,
+    a.area AS seller_area,
+    a.ward AS seller_ward,
+    a.district AS seller_district,
+    a.division AS seller_division,
+    c.name,
+    (
+      SELECT image
+      FROM product_media
+      WHERE product_id = p.product_id
+      ORDER BY media_id ASC
+      LIMIT 1
+    ) AS image
+  FROM product p
+  JOIN "User" u ON p.seller_id = u.user_id
+  LEFT JOIN address a ON u.address_id = a.address_id
+  LEFT JOIN productcategory c ON p.category_id = c.category_id
+  WHERE p.isapproved = TRUE AND p.isavailable = TRUE
+  ORDER BY p.posted_at DESC
+  LIMIT 5;
 `;
+
+
 
 const getWishlistProductsQuery = `
-  SELECT p.*
+  SELECT 
+    p.*, 
+    u.name AS seller_name,
+    u.email AS seller_email,
+    u.phone AS seller_phone,
+    a.area AS seller_area,
+    a.ward AS seller_ward,
+    a.district AS seller_district,
+    a.division AS seller_division,
+    c.name,
+    (
+      SELECT image
+      FROM product_media
+      WHERE product_id = p.product_id
+      ORDER BY media_id ASC
+      LIMIT 1
+    ) AS image
   FROM wishlist_product wp
   JOIN product p ON wp.product_id = p.product_id
-  WHERE wp.user_id = $1;
+  JOIN "User" u ON p.seller_id = u.user_id
+  LEFT JOIN address a ON u.address_id = a.address_id
+  LEFT JOIN productcategory c ON p.category_id = c.category_id
+  WHERE wp.user_id = $1 AND p.isapproved = TRUE AND p.isavailable = TRUE
+  ORDER BY p.posted_at DESC;
 `;
+
+
 
 const addProductQuery = `
   INSERT INTO product (title, description, price, used_for, category_id, seller_id, delivery_mode)
@@ -129,10 +236,31 @@ const addProductQuery = `
 `;
 
 const getOwnProductsQuery = `
-  SELECT * FROM product
-  WHERE seller_id = $1
-  ORDER BY posted_at DESC;
+  SELECT 
+    p.*, 
+    u.name AS seller_name,
+    u.email AS seller_email,
+    u.phone AS seller_phone,
+    a.area AS seller_area,
+    a.ward AS seller_ward,
+    a.district AS seller_district,
+    a.division AS seller_division,
+    c.name,
+    (
+      SELECT image
+      FROM product_media
+      WHERE product_id = p.product_id
+      ORDER BY media_id ASC
+      LIMIT 1
+    ) AS image
+  FROM product p
+  JOIN "User" u ON p.seller_id = u.user_id
+  LEFT JOIN address a ON u.address_id = a.address_id
+  LEFT JOIN productcategory c ON p.category_id = c.category_id
+  WHERE p.seller_id = $1
+  ORDER BY p.posted_at DESC;
 `;
+
 
 const updateProductQuery = `
   UPDATE product
@@ -154,9 +282,12 @@ const deleteProductQuery = `
 
 const addToWishlistQuery = `
   INSERT INTO wishlist_product (user_id, product_id)
-  VALUES ($1, $2) ON CONFLICT DO NOTHING;
+  VALUES ($1, $2);
 `;
-
+const checkIfWishlistItemExistsQuery = `
+  SELECT 1 FROM wishlist_product
+  WHERE user_id = $1 AND product_id = $2;
+`;
 const removeFromWishlistQuery = `
   DELETE FROM wishlist_product
   WHERE user_id = $1 AND product_id = $2;
@@ -169,6 +300,12 @@ const showProductsToAppoveQuery = `
 const verfyProductQuery = `
   UPDATE product SET isapproved = TRUE WHERE product_id = $1;
 `
+const getProductImagesQuery = `
+  SELECT image 
+  FROM product_media
+  WHERE product_id = $1
+`
+
 module.exports = {
   getAllProductsQuery,
   getProductByIdQuery,
@@ -184,5 +321,7 @@ module.exports = {
   addToWishlistQuery,
   removeFromWishlistQuery,
   showProductsToAppoveQuery,
-  verfyProductQuery
+  verfyProductQuery,
+  getProductImagesQuery,
+  checkIfWishlistItemExistsQuery
 };

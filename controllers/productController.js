@@ -13,7 +13,9 @@ const {
   removeFromWishlistQuery,
   searchProductsAdvancedQuery,
   showProductsToAppoveQuery,
-  verfyProductQuery
+  verfyProductQuery,
+  getProductImagesQuery,
+  checkIfWishlistItemExistsQuery
 } = require('../queries/productQueries');
 
 async function addProduct(req, res) {
@@ -48,6 +50,7 @@ async function getOwnProducts(req, res) {
 }
 
 async function getAllProducts(req, res) {
+  console.log('Fetching all products');
   try {
     const result = await pool.query(getAllProductsQuery);
     res.status(200).json(result.rows);
@@ -58,6 +61,7 @@ async function getAllProducts(req, res) {
 }
 
 async function getProductById(req, res) {
+  console.log('Fetching product by ID:', req.params.id);
   const productId = req.params.id;
   try {
     const result = await pool.query(getProductByIdQuery, [productId]);
@@ -134,7 +138,7 @@ async function deleteProduct(req, res) {
 
 async function searchProducts(req, res) {
   const {
-    q = '',
+    q = '', // Default to an empty string if not provided
     userId = null,
     category,
     minPrice,
@@ -148,16 +152,16 @@ async function searchProducts(req, res) {
 
   try {
     const result = await pool.query(searchProductsAdvancedQuery, [
-      `%${q}%`,               // $1: search keyword
-      userId,                 // $2: userId for proximity
-      category || null,       // $3
-      minPrice || 0,          // $4
-      maxPrice || 10000000,   // $5
-      usedFor || null,        // $6
-      division || null,       // $7
-      district || null,       // $8
-      ward || null,           // $9
-      area || null            // $10
+      q,                          // $1: search keyword (passed directly)
+      userId,                     // $2: userId for proximity
+      category || null,           // $3
+      minPrice || 0,              // $4
+      maxPrice || 10000000,       // $5
+      usedFor || null,            // $6
+      division || null,           // $7
+      district || null,           // $8
+      ward || null,               // $9
+      area || null                // $10
     ]);
 
     res.status(200).json({
@@ -208,14 +212,37 @@ async function getWishlist(req, res) {
 async function addToWishlist(req, res) {
   const productId = req.params.id;
   const { userId } = req.body;
+  console.log('Attempting to add product to wishlist:', productId, 'for user:', userId);
+
+  // Input validation (optional but highly recommended)
+  if (!userId || !productId) {
+    return res.status(400).json({ error: 'User ID and Product ID are required.' });
+  }
+
   try {
-    await pool.query(addToWishlistQuery, [userId, productId]);
-    res.status(200).json({ message: 'Product added to wishlist' });
+    // Step 1: Check if the product is already in the user's wishlist
+    const existingEntry = await pool.query(checkIfWishlistItemExistsQuery, [userId, productId]);
+
+    if (existingEntry.rows.length > 0) {
+      // If a row is found, it means the product is already in the wishlist
+      console.log(`Product ${productId} is already in user ${userId}'s wishlist.`);
+      // Return 409 Conflict status and a specific error message
+      return res.status(409).json({ error: 'Product is already in your wishlist.' });
+    }
+
+    // Step 2: If not in wishlist, proceed to insert
+    const result = await pool.query(addToWishlistQuery, [userId, productId]);
+    console.log('Successfully added product to wishlist:', productId, 'for user:', userId);
+    // Return 201 Created for successful creation, or 200 OK
+    res.status(201).json({ message: 'Product added to wishlist successfully!' });
+
   } catch (error) {
     console.error('addToWishlist error:', error);
-    res.status(500).json({ error: 'Failed to add to wishlist' });
+    // Handle database-specific errors if needed, otherwise general 500
+    res.status(500).json({ error: 'Failed to add to wishlist due to server error.' });
   }
 }
+
 
 async function removeFromWishlist(req, res) {
   const productId = req.params.id;
@@ -250,6 +277,19 @@ async function verifyProduct(req,res){
     res.status(500).json({ error: 'Failed to verifyProduct' });
   }
 }
+const getProductImages = async (req, res) => {
+  const productId = req.params.id;
+  console.log('Fetching images for product ID:', productId);
+
+  try {
+    const result = await pool.query(getProductImagesQuery, [productId]);
+    const images = result.rows.map(row => row.image); // extract images array
+    res.json(images); 
+  } catch (error) {
+    console.error("Error fetching product images:", error);
+    res.status(500).json({ error: "Failed to fetch product images" });
+  }
+};
 module.exports = {
   addProduct,
   getOwnProducts,
@@ -264,5 +304,6 @@ module.exports = {
   removeFromWishlist,
   getAllProducts,
   showProductsToAppove,
-  verifyProduct
+  verifyProduct,
+  getProductImages
 };

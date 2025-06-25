@@ -14,16 +14,19 @@ const {
     getWishlist,
     getAllProducts,
     showProductsToAppove,
-    verifyProduct
+    verifyProduct,
+    getProductImages
 } = require('../controllers/productController');
 const { route } = require('./userRoutes');
 
 const router = express.Router();
+// Get product images
+router.get('/:id/images', getProductImages);
+
 
 // set the buyerid when the product is purchased 
 router.patch('/buyProduct/:buyerid/:productId', buyProduct);
 
-// http://localhost:5000/api/products/showProductsToApprove
 router.get('/showProductsToApprove', showProductsToAppove);
 
 router.patch('/verifyProduct/:productid', verifyProduct);
@@ -34,6 +37,7 @@ router.get('/', getAllProducts);
 
 // Get logged-in user's own products
 router.get('/mine', getOwnProducts);
+
 
 // Get a single product by ID
 router.get('/:id', getProductById);
@@ -58,6 +62,5 @@ router.post('/:id/wishlist', addToWishlist);
 router.delete('/:id/wishlist', removeFromWishlist);
 router.get('/wishlist/all', getWishlist);
 // Get a single product by ID
-router.get('/:id', getProductById);
 
 module.exports = router;

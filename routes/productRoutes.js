@@ -13,12 +13,14 @@ const {
   addToWishlist,
   removeFromWishlist,
   getWishlist,
-  getAllProducts
+  getAllProducts,
+  getProductImages
 } = require('../controllers/productController');
 
 // Add a new product
 router.post('/', addProduct);
 router.get('/', getAllProducts);
+router.get('/images/all/:id', getProductImages);
 
 // Get logged-in user's own products
 router.get('/mine', getOwnProducts);
