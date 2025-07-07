@@ -17,7 +17,6 @@ const userRoutes = require('./routes/userRoutes.js');
 const deliveryRoutes = require('./routes/deliveryRoutes.js');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
-// const productRoutes = require('./routes/productRoutes.js');
 
 const productRoutes = require('./routes/productRoute.js');
 const purchaseroutes = require('./routes/purchaseRoute.js');
@@ -25,6 +24,7 @@ const shipmentRoutes = require('./routes/shipmentRoutes.js');
 const imageUploadRoute = require('./routes/imageUploadRoute.js');
 const statsRoutes = require('./routes/statisticsRoutes');
 
+const deliverymanRoutes = require('./routes/deliverymanRoutes.js');
 // connecting to routes
 app.use('/api/users', userRoutes);
 app.use('/api/delivery', deliveryRoutes);
@@ -36,6 +36,8 @@ app.use('/api/purchase', purchaseroutes);
 app.use("/api/shipment", shipmentRoutes);
 app.use('/api/uploadImage', imageUploadRoute);
 app.use('/api/stats', statsRoutes);
+
+app.use('/api/deliveryman', deliverymanRoutes);
 
 app.get('/', (req, res) => {
   res.send('AfterMart Backend API is running...');
