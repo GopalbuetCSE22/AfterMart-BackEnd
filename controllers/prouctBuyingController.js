@@ -82,6 +82,8 @@ async function buyProduct(req, res) {
       await pool.query('UPDATE purchase SET shipment_id = $1 WHERE purchase_id = $2', [shipmentId, purchaseid]);
     }
 
+    // update the product's isavailable status to false
+    await pool.query('UPDATE product SET isavailable = false WHERE product_id = $1', [productId]);
 
     //!!!!!!!!!!!!!!!!!
     /*

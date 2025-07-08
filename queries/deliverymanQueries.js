@@ -8,7 +8,7 @@ WHERE dm.deliveryman_id = $1
 `
 
 const getDeliveryManOrdersQuery = `
-    SELECT u.name, p.total_price, p.status, p.payment_status 
+    SELECT u.name, p.total_price, s.status, p.payment_status , s.shipment_id ,s.deliveryman_id 
     FROM purchase p
     JOIN shipment s ON p.shipment_id = s.shipment_id
     JOIN "User" u ON p.buyer_id = u.user_id

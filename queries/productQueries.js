@@ -305,7 +305,14 @@ const getProductImagesQuery = `
   FROM product_media
   WHERE product_id = $1
 `
-
+const getBroughtProductsQuery = `
+  SELECT pr.title, pr.price, dm.name ,dm.phone , s.accepted_at,s.status , p.purchase_id, pr.product_id
+  FROM purchase p 
+  join product pr on p.product_id = pr.product_id
+  join shipment s on p.shipment_id = s.shipment_id
+  LEFT join delivery_man dm on s.deliveryman_id = dm.deliveryman_id
+  WHERE p.buyer_id = $1
+`;
 module.exports = {
   getAllProductsQuery,
   getProductByIdQuery,
@@ -323,5 +330,6 @@ module.exports = {
   showProductsToAppoveQuery,
   verfyProductQuery,
   getProductImagesQuery,
-  checkIfWishlistItemExistsQuery
+  checkIfWishlistItemExistsQuery,
+  getBroughtProductsQuery
 };

@@ -15,7 +15,8 @@ const {
     getAllProducts,
     showProductsToAppove,
     verifyProduct,
-    getProductImages
+    getProductImages,
+    getBroughtProducts
 } = require('../controllers/productController');
 const { route } = require('./userRoutes');
 
@@ -35,6 +36,7 @@ router.patch('/verifyProduct/:productid', verifyProduct);
 router.post('/', addProduct);
 router.get('/', getAllProducts);
 
+//!!!!
 // Get logged-in user's own products
 router.get('/mine', getOwnProducts);
 
@@ -62,5 +64,9 @@ router.post('/:id/wishlist', addToWishlist);
 router.delete('/:id/wishlist', removeFromWishlist);
 router.get('/wishlist/all', getWishlist);
 // Get a single product by ID
+
+//!!
+// http://localhost:5000/api/product/boughtProducts/${userId}
+router.get("/boughtProducts/:userId", getBroughtProducts);
 
 module.exports = router;
