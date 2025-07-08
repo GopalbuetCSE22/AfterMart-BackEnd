@@ -293,6 +293,22 @@ const removeFromWishlistQuery = `
   WHERE user_id = $1 AND product_id = $2;
 `;
 
+const getSearchSuggestionsQuery = `
+  (
+    SELECT DISTINCT title AS suggestion
+    FROM product
+    WHERE title ILIKE $1
+    LIMIT 5
+  )
+  UNION
+  (
+    SELECT DISTINCT name AS suggestion
+    FROM productcategory
+    WHERE name ILIKE $1
+    LIMIT 3
+  );
+`;
+
 
 const showProductsToAppoveQuery = `
   SELECT * FROM product WHERE isapproved = FALSE;
@@ -323,5 +339,6 @@ module.exports = {
   showProductsToAppoveQuery,
   verfyProductQuery,
   getProductImagesQuery,
-  checkIfWishlistItemExistsQuery
+  checkIfWishlistItemExistsQuery,
+  getSearchSuggestionsQuery
 };

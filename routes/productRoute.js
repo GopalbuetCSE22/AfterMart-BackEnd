@@ -15,7 +15,11 @@ const {
     getAllProducts,
     showProductsToAppove,
     verifyProduct,
-    getProductImages
+    getProductImages,
+    getSearchSuggestions,
+    getInitialKeywords
+
+
 } = require('../controllers/productController');
 const { route } = require('./userRoutes');
 
@@ -62,5 +66,9 @@ router.post('/:id/wishlist', addToWishlist);
 router.delete('/:id/wishlist', removeFromWishlist);
 router.get('/wishlist/all', getWishlist);
 // Get a single product by ID
+router.get('/search/suggestions', getSearchSuggestions);
+router.get('/search/initialKeywords', getInitialKeywords);
+
+
 
 module.exports = router;

@@ -15,7 +15,8 @@ const {
   showProductsToAppoveQuery,
   verfyProductQuery,
   getProductImagesQuery,
-  checkIfWishlistItemExistsQuery
+  checkIfWishlistItemExistsQuery,
+  getSearchSuggestionsQuery
 } = require('../queries/productQueries');
 
 async function addProduct(req, res) {
@@ -266,6 +267,41 @@ async function showProductsToAppove(req,res) {
     res.status(500).json({ error: 'Failed to fetch showProductsToAppove' });
   }
 }
+async function getSearchSuggestions(req, res) {
+  const { q } = req.query;
+  if (!q || q.trim() === '') {
+    return res.status(400).json({ error: 'Query parameter "q" is required' });
+  }
+
+  try {
+    const values = [`%${q}%`]; // Partial match using ILIKE
+    const result = await pool.query(getSearchSuggestionsQuery, values);
+    const suggestions = result.rows.map(row => row.suggestion);
+    res.status(200).json({ suggestions });
+  } catch (error) {
+    console.error('getSearchSuggestions error:', error);
+    res.status(500).json({ error: 'Failed to fetch suggestions' });
+  }
+}
+
+
+// Controller
+async function getInitialKeywords(req, res) {
+  try {
+    const query = `
+      SELECT title AS keyword FROM product
+      UNION
+      SELECT name AS keyword FROM productcategory;
+    `;
+    const result = await pool.query(query);
+    const keywords = result.rows.map(row => row.keyword);
+    res.status(200).json({ keywords });
+  } catch (err) {
+    console.error("getInitialKeywords error:", err);
+    res.status(500).json({ error: "Failed to load keywords" });
+  }
+}
+
 
 async function verifyProduct(req,res){
   const productId = req.params.productid;
@@ -305,5 +341,7 @@ module.exports = {
   getAllProducts,
   showProductsToAppove,
   verifyProduct,
-  getProductImages
+  getProductImages,
+  getSearchSuggestions,
+  getInitialKeywords
 };
