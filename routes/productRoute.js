@@ -39,6 +39,7 @@ router.patch('/verifyProduct/:productid', verifyProduct);
 router.post('/', addProduct);
 router.get('/', getAllProducts);
 
+//!!!!
 // Get logged-in user's own products
 router.get('/mine', getOwnProducts);
 
@@ -70,5 +71,9 @@ router.get('/search/suggestions', getSearchSuggestions);
 router.get('/search/initialKeywords', getInitialKeywords);
 
 
+
+//!!
+// http://localhost:5000/api/product/boughtProducts/${userId}
+router.get("/boughtProducts/:userId", getBroughtProducts);
 
 module.exports = router;

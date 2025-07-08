@@ -91,8 +91,24 @@ async function verifyUser(req, res) {
   }
 }
 
+async function getinfoUser(req, res) {
+  const userId = req.params.userId;
+  console.log('Fetching user info for userId:', userId);
+  try {
+    const userInfo = await pool.query('SELECT * FROM "User" WHERE user_id = $1', [userId]);
+    if (userInfo.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(userInfo.rows[0]);
+  } catch (error) {
+    console.error('getinfoUser error:', error);
+    res.status(500).json({ error: 'Failed to fetch user info' });
+  }
+}
+
 module.exports = {
   registerUser,
   getUsersToVerify,
   verifyUser,
+  getinfoUser
 };

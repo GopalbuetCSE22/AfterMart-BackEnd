@@ -16,7 +16,8 @@ const {
   verfyProductQuery,
   getProductImagesQuery,
   checkIfWishlistItemExistsQuery,
-  getSearchSuggestionsQuery
+  getSearchSuggestionsQuery,
+  getBroughtProductsQuery
 } = require('../queries/productQueries');
 
 async function addProduct(req, res) {
@@ -326,6 +327,21 @@ const getProductImages = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch product images" });
   }
 };
+
+async function getBroughtProducts(req, res) {
+  const userId = req.params.userId;
+  console.log('Fetching brought products for user ID:', userId);
+
+  try {
+    const result = await pool.query(getBroughtProductsQuery, [userId]);
+    if (result.rows.length === 0) return res.status(404).json({ message: 'No products found for this user' });
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('getBroughtProducts error:', error);
+    res.status(500).json({ error: 'Failed to fetch brought products' });
+  }
+}
+
 module.exports = {
   addProduct,
   getOwnProducts,
@@ -343,5 +359,6 @@ module.exports = {
   verifyProduct,
   getProductImages,
   getSearchSuggestions,
-  getInitialKeywords
+  getInitialKeywords,
+  getBroughtProducts
 };
