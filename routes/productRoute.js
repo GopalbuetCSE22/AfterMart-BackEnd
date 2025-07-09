@@ -17,7 +17,10 @@ const {
     verifyProduct,
     getProductImages,
     getSearchSuggestions,
-    getInitialKeywords
+    getInitialKeywords,
+    getBroughtProducts,
+    uploadProductImages,
+    deleteProductImage
 
 
 } = require('../controllers/productController');
@@ -69,6 +72,11 @@ router.get('/wishlist/all', getWishlist);
 // Get a single product by ID
 router.get('/search/suggestions', getSearchSuggestions);
 router.get('/search/initialKeywords', getInitialKeywords);
+// Upload image(s) for a product
+router.post('/:id/images', uploadProductImages);
+
+// Delete a specific image by media_id
+router.delete('/:productId/images/:mediaId', deleteProductImage);
 
 
 

@@ -321,6 +321,22 @@ const getProductImagesQuery = `
   FROM product_media
   WHERE product_id = $1
 `
+function insertProductImagesQuery(imageCount) {
+  const placeholders = [];
+  for (let i = 0; i < imageCount; i++) {
+    const idx = i * 2;
+    placeholders.push(`($${idx + 1}, $${idx + 2})`);
+  }
+  return `
+    INSERT INTO product_media (product_id, image)
+    VALUES ${placeholders.join(', ')}
+  `;
+}
+const deleteProductImageQuery = `
+  DELETE FROM product_media
+  WHERE product_id = $1 AND media_id = $2
+`;
+
 const getBroughtProductsQuery = `
   SELECT pr.title, pr.price, dm.name ,dm.phone , s.accepted_at,s.status , p.purchase_id, pr.product_id
   FROM purchase p 
@@ -348,5 +364,7 @@ module.exports = {
   getProductImagesQuery,
   checkIfWishlistItemExistsQuery,
   getSearchSuggestionsQuery,
-  getBroughtProductsQuery
+  getBroughtProductsQuery,
+  insertProductImagesQuery,
+  deleteProductImageQuery
 };

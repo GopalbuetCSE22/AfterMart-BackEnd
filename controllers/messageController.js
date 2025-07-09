@@ -3,7 +3,8 @@ const {
   getConversationQuery,
   insertConversationQuery,
   getMessagesByConversationIdQuery,
-  insertMessageQuery
+    insertMessageQuery,
+    getConversationsByProductAndSellerQuery
 } = require('../queries/messageQueries');
 
 // Start or get existing conversation
@@ -42,6 +43,21 @@ async function getMessages(req, res) {
     return res.status(500).json({ error: 'Server error while fetching messages' });
   }
 }
+async function getConversationsByProduct(req, res) {
+    const { productId, sellerId } = req.query;
+  
+    if (!productId || !sellerId) {
+      return res.status(400).json({ error: 'Missing productId or sellerId' });
+    }
+  
+    try {
+      const result = await pool.query(getConversationsByProductAndSellerQuery, [productId, sellerId]);
+      return res.status(200).json(result.rows);
+    } catch (error) {
+      console.error('Error in getConversationsByProduct:', error);
+      return res.status(500).json({ error: 'Server error while fetching conversations' });
+    }
+  }
 
 // Send a message
 async function sendMessage(req, res) {
@@ -63,5 +79,6 @@ async function sendMessage(req, res) {
 module.exports = {
   startConversation,
   getMessages,
-  sendMessage
+    sendMessage,
+    getConversationsByProduct
 };

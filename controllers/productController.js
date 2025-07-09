@@ -17,7 +17,9 @@ const {
   getProductImagesQuery,
   checkIfWishlistItemExistsQuery,
   getSearchSuggestionsQuery,
-  getBroughtProductsQuery
+  getBroughtProductsQuery,
+  insertProductImagesQuery,
+  deleteProductImageQuery
 } = require('../queries/productQueries');
 
 async function addProduct(req, res) {
@@ -314,6 +316,42 @@ async function verifyProduct(req,res){
     res.status(500).json({ error: 'Failed to verifyProduct' });
   }
 }
+async function uploadProductImages(req, res) {
+  const productId = req.params.id;
+  const { images } = req.body; // Expecting an array of image URLs
+
+  if (!Array.isArray(images) || images.length === 0) {
+    return res.status(400).json({ error: 'No images provided' });
+  }
+
+  try {
+    const values = images.map(url => [productId, url]);
+    const query = insertProductImagesQuery(values.length);
+    const flatValues = values.flat();
+
+    await pool.query(query, flatValues);
+    res.status(201).json({ message: 'Images uploaded successfully' });
+  } catch (error) {
+    console.error("uploadProductImages error:", error);
+    res.status(500).json({ error: 'Failed to upload images' });
+  }
+}
+async function deleteProductImage(req, res) {
+  const { productId, mediaId } = req.params;
+
+  try {
+    const result = await pool.query(deleteProductImageQuery, [productId, mediaId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Image not found or not associated with product' });
+    }
+
+    res.status(200).json({ message: 'Image deleted successfully' });
+  } catch (error) {
+    console.error("deleteProductImage error:", error);
+    res.status(500).json({ error: 'Failed to delete image' });
+  }
+}
+
 const getProductImages = async (req, res) => {
   const productId = req.params.id;
   console.log('Fetching images for product ID:', productId);
@@ -360,5 +398,7 @@ module.exports = {
   getProductImages,
   getSearchSuggestions,
   getInitialKeywords,
-  getBroughtProducts
+  getBroughtProducts,
+  uploadProductImages,
+  deleteProductImage
 };

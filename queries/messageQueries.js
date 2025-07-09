@@ -10,8 +10,7 @@ const insertConversationQuery = `
 `;
 
 const getMessagesByConversationIdQuery = `
-  SELECT message_id, sender_id, content, sent_at
-  FROM message
+  SELECT * FROM message
   WHERE conversation_id = $1
   ORDER BY sent_at ASC
 `;
@@ -19,12 +18,27 @@ const getMessagesByConversationIdQuery = `
 const insertMessageQuery = `
   INSERT INTO message (conversation_id, sender_id, content)
   VALUES ($1, $2, $3)
-  RETURNING message_id, sender_id, content, sent_at
+  RETURNING *
+`;
+const getConversationsByProductAndSellerQuery = `
+  SELECT
+    c.conversation_id,
+    c.buyer_id,
+    u.name AS buyer_name,
+    u.email AS buyer_email
+  FROM conversation c
+  JOIN "User" u ON c.buyer_id = u.user_id
+  -- NEW: Join with the message table
+  JOIN message m ON c.conversation_id = m.conversation_id
+  WHERE c.product_id = $1 AND c.seller_id = $2
+  GROUP BY c.conversation_id, c.buyer_id, u.name, u.email -- Group by all selected non-aggregated columns
+  ORDER BY MAX(m.sent_at) DESC, c.conversation_id DESC -- Order by last message sent, then conversation ID
 `;
 
 module.exports = {
   getConversationQuery,
   insertConversationQuery,
   getMessagesByConversationIdQuery,
-  insertMessageQuery
+    insertMessageQuery,
+    getConversationsByProductAndSellerQuery
 };
