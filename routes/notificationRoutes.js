@@ -7,6 +7,7 @@ const {
 } = require('../controllers/notificationController');
 
 // GET all notifications for a user
+// /notifications/user/${userId}
 router.get('/:userId', getNotificationsForUser);
 
 // PATCH to mark a notification as read
