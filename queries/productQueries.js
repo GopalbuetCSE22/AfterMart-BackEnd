@@ -99,7 +99,7 @@ const searchProductsAdvancedQuery = `
     p.isapproved,
     p.approved_by,
     p.isavailable,
-    p.showPhoneNumber,
+  
     p.posted_at,
     p.delivery_mode,
 
@@ -317,25 +317,29 @@ const verfyProductQuery = `
   UPDATE product SET isapproved = TRUE WHERE product_id = $1;
 `
 const getProductImagesQuery = `
-  SELECT image 
-  FROM product_media
-  WHERE product_id = $1
-`
+    SELECT media_id, image
+    FROM product_media
+    WHERE product_id = $1
+    ORDER BY media_id; -- Order for consistent display
+`;
 function insertProductImagesQuery(imageCount) {
-  const placeholders = [];
-  for (let i = 0; i < imageCount; i++) {
-    const idx = i * 2;
-    placeholders.push(`($${idx + 1}, $${idx + 2})`);
-  }
-  return `
-    INSERT INTO product_media (product_id, image)
-    VALUES ${placeholders.join(', ')}
-  `;
+    const placeholders = [];
+    for (let i = 0; i < imageCount; i++) {
+        const idx = i * 2;
+        placeholders.push(`($${idx + 1}, $${idx + 2})`);
+    }
+    return `
+        INSERT INTO product_media (product_id, image)
+        VALUES ${placeholders.join(', ')}
+        RETURNING media_id, image; -- Return inserted media_id and image
+    `;
 }
 const deleteProductImageQuery = `
-  DELETE FROM product_media
-  WHERE product_id = $1 AND media_id = $2
+    DELETE FROM product_media
+    WHERE product_id = $1 AND media_id = $2
+    RETURNING media_id; -- Return deleted media_id for confirmation
 `;
+
 
 const getBroughtProductsQuery = `
   SELECT pr.title, pr.price, dm.name ,dm.phone , s.accepted_at,s.status , p.purchase_id, pr.product_id

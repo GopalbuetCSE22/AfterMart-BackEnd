@@ -35,7 +35,7 @@ async function userLogin(req, res) {
       SECRET_KEY,
       { expiresIn: '1h' }
     );
-    res.status(200).json({ token, user_id: user.user_id });
+    res.status(200).json({ token, user_id: user.user_id, name: user.name, email: user.email ,isverified: user.isverified});
   } catch (error) {
     console.error('userLogin error:', error);
     res.status(500).json({ error: 'Internal server error' });

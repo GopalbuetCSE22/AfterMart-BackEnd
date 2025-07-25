@@ -11,62 +11,74 @@ const {
 
 // Register a new user
 async function registerUser(req, res) {
-  const {
-    name,
-    email,
-    phone,
-    password,
-    division,
-    district,
-    ward,
-    area,
-    house_and_road,
-  } = req.body;
-  console.log('registerUser body:', req.body);
-  
-  try {
-    // Check if user with the same email already exists
-    console.log("Gopal checking for existing user with email:", email);
-    
-    const userCheck = await pool.query(getUserByEmail, [email]);
-    console.log('User check result:', userCheck.rows);
-    if (userCheck.rows.length > 0) {
-      return res.status(409).json({ message: 'User with this email already exists' });
+    const {
+        name,
+        email,
+        phone,
+        password,
+        division,
+        district,
+        ward,
+        area,
+        house_and_road,
+        profile_picture // This will now be the ImageKit URL (or null)
+    } = req.body;
+
+    console.log('registerUser body:', req.body); // Log the full body for debugging
+
+    // Basic validation for required fields
+    if (!name || !email || !phone || !password || !division || !district || !ward || !area || !house_and_road) {
+        return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-    // Hash the password
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    try {
+        // Check if user with the same email already exists
+        console.log("Checking for existing user with email:", email);
+        const userCheck = await pool.query(getUserByEmail, [email]);
+        console.log('User check result:', userCheck.rows);
+        if (userCheck.rows.length > 0) {
+            // Error: User with this email already exists
+            return res.status(409).json({ message: 'User with this email already exists.' });
+        }
 
-    // Check if address already exists
-    let addressId;
-    const addressCheck = await pool.query(findAddress, [division, district, ward, area]);
+        // Hash the password
+        const hashedPassword = bcrypt.hashSync(password, 10);
 
-    if (addressCheck.rows.length > 0) {
-      addressId = addressCheck.rows[0].address_id;
-    } else {
-      const addressInsert = await pool.query(insertAddress, [division, district, ward, area]);
-      addressId = addressInsert.rows[0].address_id;
+        // Check if address already exists to avoid duplicates
+        let addressId;
+        const addressCheck = await pool.query(findAddress, [division, district, ward, area]);
+
+        if (addressCheck.rows.length > 0) {
+            addressId = addressCheck.rows[0].address_id;
+            console.log('Existing address found, ID:', addressId);
+        } else {
+            // Insert new address if it doesn't exist
+            const addressInsert = await pool.query(insertAddress, [division, district, ward, area]);
+            addressId = addressInsert.rows[0].address_id;
+            console.log('New address inserted, ID:', addressId);
+        }
+
+        // Insert new user with all details, including the profile_picture URL
+        // IMPORTANT: The 'insertUser' query needs to be updated to accept profile_picture.
+        await pool.query(insertUser, [
+            name,
+            email,
+            phone,
+            hashedPassword,
+            addressId,
+            house_and_road,
+            profile_picture // Pass the ImageKit URL (or null)
+        ]);
+
+        console.log('User registered successfully:', { name, email, phone, addressId, house_and_road, profile_picture });
+
+        return res.status(200).json({ message: 'User registered successfully!' });
+    } catch (error) {
+        console.error('registerUser error:', error);
+        // Generic error message for internal server errors
+        return res.status(500).json({ error: 'User registration failed due to an internal server error.' });
     }
-
-    // Insert new user
-    await pool.query(insertUser, [
-      name,
-      email,
-      phone,
-      hashedPassword,
-      addressId,
-      house_and_road,
-    ]);
-    console.log(name, email, phone, hashedPassword, addressId, house_and_road);
-    
-
-    return res.status(200).json({ message: 'User registered successfully' });
-  } catch (error) {
-    console.error('registerUser error:', error);
-    return res.status(500).json({ error: 'User registration failed' });
-  }
 }
-
 // Admin: Get all unverified users
 async function getUsersToVerify(req, res) {
   console.log('Fetching unverified users');
@@ -99,6 +111,8 @@ async function getinfoUser(req, res) {
     if (userInfo.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
+    //see  the profile_picture link
+    console.log('User profile picture URL:', userInfo.rows[0].profile_picture);
     res.status(200).json(userInfo.rows[0]);
   } catch (error) {
     console.error('getinfoUser error:', error);

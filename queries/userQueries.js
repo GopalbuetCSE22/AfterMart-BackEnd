@@ -17,8 +17,8 @@ const insertAddress = `
 `;
 
 const insertUser = `
-  INSERT INTO "User" (name, email, phone, password, address_id, house_and_road)
-  VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO "User" (name, email, phone, password, address_id, house_and_road, profile_picture)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
 `;
 
 const getUnverifiedUsers = `

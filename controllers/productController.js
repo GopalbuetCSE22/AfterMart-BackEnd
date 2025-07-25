@@ -317,8 +317,12 @@ async function verifyProduct(req,res){
   }
 }
 async function uploadProductImages(req, res) {
-  const productId = req.params.id;
-  const { images } = req.body; // Expecting an array of image URLs
+  const productId = parseInt(req.params.id);
+  const { images } = req.body;
+
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: 'Invalid product ID' });
+  }
 
   if (!Array.isArray(images) || images.length === 0) {
     return res.status(400).json({ error: 'No images provided' });
@@ -330,7 +334,7 @@ async function uploadProductImages(req, res) {
     const flatValues = values.flat();
 
     await pool.query(query, flatValues);
-    res.status(201).json({ message: 'Images uploaded successfully' });
+    res.status(201).json({ message: `Uploaded ${images.length} images successfully` });
   } catch (error) {
     console.error("uploadProductImages error:", error);
     res.status(500).json({ error: 'Failed to upload images' });
@@ -352,18 +356,20 @@ async function deleteProductImage(req, res) {
   }
 }
 
+// controller methods
 const getProductImages = async (req, res) => {
-  const productId = req.params.id;
-  console.log('Fetching images for product ID:', productId);
+    const productId = req.params.id;
+    console.log('Fetching images for product ID:', productId);
 
-  try {
-    const result = await pool.query(getProductImagesQuery, [productId]);
-    const images = result.rows.map(row => row.image); // extract images array
-    res.json(images); 
-  } catch (error) {
-    console.error("Error fetching product images:", error);
-    res.status(500).json({ error: "Failed to fetch product images" });
-  }
+    try {
+        const result = await pool.query(getProductImagesQuery, [productId]);
+        // Map to include both media_id and image URL
+        const images = result.rows.map(row => ({ media_id: row.media_id, image: row.image })); // Changed this line
+        res.json(images);
+    } catch (error) {
+        console.error("Error fetching product images:", error);
+        res.status(500).json({ error: "Failed to fetch product images" });
+    }
 };
 
 async function getBroughtProducts(req, res) {
@@ -372,8 +378,11 @@ async function getBroughtProducts(req, res) {
 
   try {
     const result = await pool.query(getBroughtProductsQuery, [userId]);
+      console.log('inside the try block of getBroughtProducts');
+
     if (result.rows.length === 0) return res.status(404).json({ message: 'No products found for this user' });
     res.status(200).json(result.rows);
+    console.log('Brought products for user ID:', userId, 'are:', result.rows);
   } catch (error) {
     console.error('getBroughtProducts error:', error);
     res.status(500).json({ error: 'Failed to fetch brought products' });
