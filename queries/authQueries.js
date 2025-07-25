@@ -7,6 +7,10 @@ const getAdminByEmail = `
   SELECT * FROM admin WHERE email = $1;
 `;
 
+const getDeliveryByCompanyName = `
+  SELECT * FROM delivery_service WHERE company_name = $1;
+`;
+
 const getDeliveryByCompanyNameAndTradeLicense = `
   SELECT * FROM delivery_service WHERE company_name = $1 AND trade_license = $2 AND isverified = TRUE;
 `;
@@ -16,5 +20,6 @@ module.exports = {
   getUserByEmail,
   getAdminByEmail,
   getDeliveryByCompanyNameAndTradeLicense,
-  getDeliveryManByEmail
+  getDeliveryManByEmail,
+  getDeliveryByCompanyName
 };
