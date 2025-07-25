@@ -120,9 +120,28 @@ async function getinfoUser(req, res) {
   }
 }
 
+
+async function isverifiedUser(req, res) {
+  const userId = req.params.userId;
+  console.log('Fetching user info for userId:', userId);
+  try {
+    const userInfo = await pool.query('SELECT isverified FROM "User" WHERE user_id = $1', [userId]);
+    if (userInfo.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    //see  the profile_picture link
+    console.log(userInfo)
+    res.status(200).json(userInfo.rows[0]);
+  } catch (error) {
+    console.error('getinfoUser error:', error);
+    res.status(500).json({ error: 'Failed to fetch user info' });
+  }
+}
+
 module.exports = {
   registerUser,
   getUsersToVerify,
   verifyUser,
-  getinfoUser
+  getinfoUser,
+  isverifiedUser
 };

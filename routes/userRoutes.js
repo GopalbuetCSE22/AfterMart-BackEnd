@@ -5,7 +5,8 @@ const {
   registerUser,
   getUsersToVerify,
   verifyUser,
-  getinfoUser
+  getinfoUser,
+  isverifiedUser
 } = require('../controllers/userController.js');
 
 
@@ -17,4 +18,5 @@ router.patch('/verifyUser/:id', verifyUser);
 
 router.get('/info/:userId', getinfoUser);
 
+router.get('/isVerified/:userId', isverifiedUser);
 module.exports = router;
