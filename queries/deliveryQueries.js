@@ -11,8 +11,8 @@ const insertAddress = `
 `;
 
 const insertDeliveryService = `
-  INSERT INTO delivery_service (company_name, trade_license, company_address)
-  VALUES ($1, $2, $3);
+  INSERT INTO delivery_service (company_name, trade_license, company_address, password)
+  VALUES ($1, $2, $3, $4);
 `;
 
 const getUnverifiedDeliveryServices = `

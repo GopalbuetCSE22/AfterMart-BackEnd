@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const bcrypt = require('bcrypt');
 const {
   findAddress,
   insertAddress,
@@ -12,7 +13,7 @@ const {
 
 // Register a new delivery company
 async function registerDeliveryService(req, res) {
-  const { companyName, tradeLicense, division, district, ward, area } = req.body;
+  const { companyName, tradeLicense, password, division, district, ward, area } = req.body;
 
   try {
     const existing = await pool.query(getDeliveryServiceByCompanyAndTrade, [companyName, tradeLicense]);
@@ -20,6 +21,7 @@ async function registerDeliveryService(req, res) {
       return res.status(409).json({ message: 'Delivery service with this trade license already exists' });
     }
 
+    // Address resolution (unchanged)
     let addressId;
     const addressCheck = await pool.query(findAddress, [division, district, ward, area]);
 
@@ -30,7 +32,11 @@ async function registerDeliveryService(req, res) {
       addressId = addressInsert.rows[0].address_id;
     }
 
-    await pool.query(insertDeliveryService, [companyName, tradeLicense, addressId]);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Updated insert
+    await pool.query(insertDeliveryService, [companyName, tradeLicense, addressId, hashedPassword]);
 
     res.status(200).json({ message: 'Delivery Service registered successfully, wait for verification' });
   } catch (error) {
@@ -38,7 +44,6 @@ async function registerDeliveryService(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
-
 // for admin 
 async function getDeliveryServicesToVerify(req, res) {
   try {

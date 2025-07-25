@@ -6,7 +6,8 @@ const {
   getUserByEmail,
   getAdminByEmail,
   getDeliveryByCompanyNameAndTradeLicense,
-  getDeliveryManByEmail
+  getDeliveryManByEmail,
+  getDeliveryByCompanyName
 } = require('../queries/authQueries');
 
 const SECRET_KEY = "PASSword";
@@ -77,19 +78,24 @@ async function adminLogin(req, res) {
 }
 
 async function deliveryServiceLogin(req, res) {
-  const { companyName, tradeLicense } = req.body;
+  const { companyName, password } = req.body;
 
   try {
-    const { rows } = await pool.query(getDeliveryByCompanyNameAndTradeLicense, [
-      companyName,
-      tradeLicense,
-    ]);
+    // Find the company by name
+    const { rows } = await pool.query(getDeliveryByCompanyName, [companyName]);
     const deliveryCompany = rows[0];
 
     if (!deliveryCompany) {
-      return res.status(401).json({ message: 'Invalid Company or tradeLicense' });
+      return res.status(401).json({ message: 'Invalid company name or password' });
     }
 
+    // Compare password
+    const match = await bcrypt.compare(password, deliveryCompany.password);
+    if (!match) {
+      return res.status(401).json({ message: 'Invalid company name or password' });
+    }
+
+    // Generate token
     const token = jwt.sign(
       { id: deliveryCompany.company_id, company_name: deliveryCompany.company_name },
       SECRET_KEY,
@@ -102,6 +108,7 @@ async function deliveryServiceLogin(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
 
 async function deliveryManlogin(req, res) {
   const { email, password } = req.body;
