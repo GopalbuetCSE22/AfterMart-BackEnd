@@ -25,6 +25,8 @@ async function getNotificationsForUser(req, res) {
 async function markNotificationAsRead(req, res) {
   const { notificationId } = req.params;
 
+  console.log("Notification ID:", notificationId);
+  
   if (!notificationId) {
     return res.status(400).json({ error: 'Notification ID is required' });
   }

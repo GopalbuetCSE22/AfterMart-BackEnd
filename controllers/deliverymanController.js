@@ -118,4 +118,20 @@ const changePassword = async (req, res) => {
     }
 }
 
-module.exports = { getprofileDeliveryMan, getOrders, acceptShipment, markTheshipmentDelivered, changePassword };
+const getdeliverymaninfo = async (req, res) => {
+    const shipmentId = req.params.shipment_id;
+    console.log('Fetching deliveryman info for shipment:', shipmentId);
+
+    try {
+        const result = await pool.query('SELECT dm.name , dm.phone, dm.email, dm.rating_avg FROM shipment s JOIN delivery_man dm ON s.deliveryman_id = dm.deliveryman_id WHERE s.shipment_id = $1', [shipmentId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'No deliveryman found for this shipment' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        console.error('Error fetching deliveryman info:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+module.exports = { getprofileDeliveryMan, getOrders, acceptShipment, markTheshipmentDelivered, changePassword, getdeliverymaninfo };
