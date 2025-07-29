@@ -1,4 +1,3 @@
-// controllers/imageUploadController.js
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
@@ -35,6 +34,33 @@ async function uploadToImageKit(filePath, fileName, folder = '/') {
     } catch (err) {
         console.error('ImageKit upload error:', err.response?.data || err.message);
         throw new Error('Image upload to ImageKit failed. Please check backend logs.');
+    } finally {
+        // Ensure the temporary file is deleted even if ImageKit upload fails
+        fs.unlink(filePath, (unlinkErr) => {
+            if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
+        });
+    }
+}
+
+// imageUploader_message (Updated: now only uploads to ImageKit and returns URL)
+async function imageUploader_message(req, res) {
+    const file = req.file;
+
+    if (!file) {
+        return res.status(400).json({ error: 'Image file is required.' });
+    }
+
+    try {
+        const imageUrl = await uploadToImageKit(file.path, file.originalname, '/message-media');
+        // No database interaction here, just return the URL
+        res.json({
+            message: 'Message media uploaded successfully to ImageKit!',
+            url: imageUrl
+        });
+
+    } catch (error) {
+        console.error('imageUploader_message error:', error);
+        res.status(500).json({ error: error.message || 'Message media upload failed.' });
     }
 }
 
@@ -49,11 +75,6 @@ async function imageUploader(req, res) {
 
     try {
         const imageUrl = await uploadToImageKit(file.path, file.originalname, '/profile-pictures');
-
-        // Delete temp file after upload
-        fs.unlink(file.path, (unlinkErr) => {
-            if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
-        });
 
         // Update the user's profile picture in the database
         await pool.query(
@@ -104,11 +125,6 @@ async function imageUploader_product(req, res) {
     try {
         const imageUrl = await uploadToImageKit(file.path, file.originalname, '/product-images');
 
-        // Delete temp file
-        fs.unlink(file.path, (unlinkErr) => {
-            if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
-        });
-
         // Check if product exists first
         const productCheck = await pool.query('SELECT product_id FROM product WHERE product_id = $1', [productId]);
         
@@ -143,12 +159,6 @@ async function imageUploader_register(req, res) {
 
     try {
         const imageUrl = await uploadToImageKit(file.path, file.originalname, '/registration-profile-pictures');
-
-        // Delete temp file after upload
-        fs.unlink(file.path, (unlinkErr) => {
-            if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
-        });
-
         res.json({ message: 'Image uploaded successfully to ImageKit!', url: imageUrl });
     } catch (error) {
         console.error('imageUploader_register error:', error);
@@ -160,5 +170,6 @@ module.exports = {
     imageUploader,
     getProfilePicLink,
     imageUploader_product,
-    imageUploader_register
+    imageUploader_register,
+    imageUploader_message
 };

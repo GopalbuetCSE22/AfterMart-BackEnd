@@ -4,7 +4,9 @@ const {
   insertConversationQuery,
   getMessagesByConversationIdQuery,
   insertMessageQuery,
-  getConversationsByProductAndSellerQuery
+  getConversationsByProductAndSellerQuery,
+  deleteMessageByIdQuery,
+  insertMessageMediaQuery
 } = require('../queries/messageQueries');
 
 // Start or get existing conversation
@@ -31,20 +33,22 @@ async function startConversation(req, res) {
   }
 }
 
-// Get all messages in a conversation
-async function getMessages(req, res) {
-  console.log("Gopal Roy");
+const getMessages = async (req, res) => {
+  const conversationId = parseInt(req.params.conversationId);
 
-  const { conversationId } = req.params;
+  if (isNaN(conversationId)) {
+    return res.status(400).json({ error: 'Invalid conversation ID' });
+  }
 
   try {
     const result = await pool.query(getMessagesByConversationIdQuery, [conversationId]);
-    return res.status(200).json(result.rows);
+    res.status(200).json(result.rows); // Each row includes media_urls array
   } catch (error) {
-    console.error('Error in getMessages:', error);
-    return res.status(500).json({ error: 'Server error while fetching messages' });
+    console.error('getMessages error:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
   }
-}
+};
+
 async function getConversationsByProduct(req, res) {
   const { productId, sellerId } = req.query;
 
@@ -61,30 +65,64 @@ async function getConversationsByProduct(req, res) {
   }
 }
 
-// Send a message
+// Send a message (Updated to handle mediaUrl and content NOT NULL constraint)
 async function sendMessage(req, res) {
-  const { conversationId, senderId, content } = req.body;
+  const { conversationId, senderId, content, mediaUrl } = req.body; // Added mediaUrl
 
-  if (!conversationId || !senderId || !content?.trim()) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Content or mediaUrl must be present
+  if (!conversationId || !senderId || (!content?.trim() && !mediaUrl)) {
+    return res.status(400).json({ error: 'Missing conversationId, senderId, or message content/media.' });
   }
 
   try {
-    const result = await pool.query(insertMessageQuery, [conversationId, senderId, content.trim()]);
-    return res.status(201).json(result.rows[0]);
+    // Determine the content to insert: use trimmed content, or an empty string if content is empty/null but media is present.
+    const messageContent = content?.trim() || ''; 
+    
+    // Insert the message first
+    const messageResult = await pool.query(insertMessageQuery, [conversationId, senderId, messageContent]);
+    const newMessage = messageResult.rows[0];
+
+    // If mediaUrl is provided, insert it into message_media
+    if (mediaUrl) {
+      await pool.query(insertMessageMediaQuery, [newMessage.message_id, mediaUrl]);
+      // Optionally, you might want to fetch the message again with its media_urls
+      // For simplicity, we'll rely on the frontend's polling to get the updated message
+    }
+
+    // Return the new message (or a confirmation)
+    res.status(201).json(newMessage);
   } catch (error) {
     console.error('Error in sendMessage:', error);
-    return res.status(500).json({ error: 'Server error while sending message' });
+    res.status(500).json({ error: 'Server error while sending message' });
   }
 }
+
+// Function to delete a message
+async function deleteMessage(req, res) {
+  const messageId = parseInt(req.params.messageId);
+
+  if (isNaN(messageId)) {
+    return res.status(400).json({ error: 'Invalid message ID.' });
+  }
+
+  try {
+    const result = await pool.query(deleteMessageByIdQuery, [messageId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Message not found or already deleted.' });
+    }
+    res.status(200).json({ message: 'Message deleted successfully.' });
+  } catch (error) {
+    console.error('Error in deleteMessage:', error);
+    res.status(500).json({ error: 'Server error while deleting message.' });
+  }
+}
+
 
 async function getconversation_id(req, res) {
   const productId = parseInt(req.query.productId);
   const buyerId = parseInt(req.query.buyerId);
   const sellerId = parseInt(req.query.sellerId);
   console.log("Gopal Roy");
-  // const { productId, buyerId, sellerId } = req.body;
-  // console.log(productId);
   console.log(buyerId);
   console.log(sellerId);
   // Validate that they are valid integers
@@ -122,5 +160,6 @@ module.exports = {
   getMessages,
   sendMessage,
   getConversationsByProduct,
-  getconversation_id
+  getconversation_id,
+  deleteMessage
 };

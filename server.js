@@ -32,6 +32,7 @@ const messageRoutes = require('./routes/messageRoutes.js');
 
 const deliverymanRoutes = require('./routes/deliverymanRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
+
 // connecting to routes
 app.use('/api/users', userRoutes);
 app.use('/api/delivery', deliveryRoutes);

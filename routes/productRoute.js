@@ -50,6 +50,7 @@ router.get('/mine', getOwnProducts);
 // Get a single product by ID
 router.get('/:id', getProductById);
 
+
 // Update a product
 router.patch('/:id', updateProduct);
 

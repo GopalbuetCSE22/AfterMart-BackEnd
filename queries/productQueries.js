@@ -48,7 +48,7 @@ const getProductByIdQuery = `
   JOIN "User" u ON p.seller_id = u.user_id
   LEFT JOIN address a ON u.address_id = a.address_id
   LEFT JOIN productcategory c ON p.category_id = c.category_id
-  WHERE p.product_id = $1 AND p.isapproved = TRUE AND p.isavailable = TRUE;
+  WHERE p.product_id = $1  AND p.isavailable = TRUE;
 `;
 
 

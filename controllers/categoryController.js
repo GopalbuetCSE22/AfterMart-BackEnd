@@ -1,3 +1,5 @@
+// controllers/categoryController.js
+
 const pool = require('../db/pool');
 const { fetchAllCategories } = require('../queries/categoryQueries');
 
