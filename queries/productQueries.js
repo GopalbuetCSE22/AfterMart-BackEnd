@@ -342,14 +342,15 @@ const deleteProductImageQuery = `
 
 
 const getBroughtProductsQuery = `
-  SELECT pr.title,pr.seller_id, pr.price, dm.name ,dm.phone , s.accepted_at,s.status , p.purchase_id, pr.product_id,s.shipment_id,s.deliveryman_id
-  FROM purchase p 
+  SELECT pr.title,pr.seller_id, pr.price, dm.name ,dm.phone , p.created_at,s.status , p.purchase_id, pr.product_id,s.shipment_id,s.deliveryman_id
+  FROM purchase p
   join product pr on p.product_id = pr.product_id
-  join shipment s on p.shipment_id = s.shipment_id
+  left join shipment s on p.shipment_id = s.shipment_id
 
   LEFT join delivery_man dm on s.deliveryman_id = dm.deliveryman_id
-  WHERE p.buyer_id = $1
+  WHERE pr.buyer_id = $1
 `;
+
 module.exports = {
   getAllProductsQuery,
   getProductByIdQuery,

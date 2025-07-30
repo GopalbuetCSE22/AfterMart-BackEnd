@@ -40,61 +40,51 @@ const getDeliveryManProfileQuery = `
 // These are 'PENDING' purchases that don't have a shipment_id yet,
 // and their delivery address (buyer's address) is within the deliveryman's preferred areas.
 const getAvailableOrdersQuery = `
+    WITH matched_orders AS (
     SELECT
         p.purchase_id,
-        p.total_price,
-        p.status AS purchase_status,
         u.name AS buyer_name,
-        ba.division AS delivery_division,
-        ba.district AS delivery_district,
-        ba.ward AS delivery_ward,
-        ba.area AS delivery_area,
+        u.phone AS buyer_phone,
+        p.total_price,
+        -- Frontend expects delivery_division, delivery_district, etc.
+        a.division AS delivery_division,
+        a.district AS delivery_district,
+        a.ward AS delivery_ward,
+        a.area AS delivery_area,
+        -- Frontend checks for shipment_status being NULL for "Available"
         NULL AS shipment_id,
         NULL AS shipment_status,
-        -- Calculate a match score for each potential order
-        COALESCE(
-            MAX(
-                (CASE WHEN pref_a.area = ba.area THEN 4 ELSE 0 END) +
-                (CASE WHEN pref_a.ward = ba.ward THEN 3 ELSE 0 END) +
-                (CASE WHEN pref_a.district = ba.district THEN 2 ELSE 0 END) +
-                (CASE WHEN pref_a.division = ba.division THEN 1 ELSE 0 END)
-            ), 0
-        ) AS match_score
-    FROM
-        purchase p
-    JOIN
-        "User" u ON p.buyer_id = u.user_id
-    JOIN
-        address ba ON u.address_id = ba.address_id -- Buyer's default address is the delivery address
-    LEFT JOIN -- Use LEFT JOIN to ensure all purchases are considered, even if no pref area match, then filter
-        deliverymanprefarea dpa ON dpa.deliveryman_id = $1 -- Join with the specific deliveryman's preferred areas
-    LEFT JOIN
-        address pref_a ON dpa.address_id = pref_a.address_id
-    WHERE
-        p.status = 'PENDING'
-        AND p.shipment_id IS NULL
-        AND p.delivery_mode = 'Delivery' -- Ensure only 'Delivery' type purchases are considered
-        AND ( -- At least a division match is required OR if preferred areas are null (meaning all areas are preferred)
-            pref_a.address_id IS NULL OR -- This covers deliverymen with no specific preferred areas (implying all)
-            EXISTS ( -- Check if there's ANY preferred area that overlaps for the current deliveryman
-                SELECT 1
-                FROM deliverymanprefarea dpa_sub
-                JOIN address pref_a_sub ON dpa_sub.address_id = pref_a_sub.address_id
-                WHERE dpa_sub.deliveryman_id = $1
-                  AND (
-                      (pref_a_sub.division IS NULL OR pref_a_sub.division = ba.division) AND
-                      (pref_a_sub.district IS NULL OR pref_a_sub.district = ba.district) AND
-                      (pref_a_sub.ward IS NULL OR pref_a_sub.ward = ba.ward) AND
-                      (pref_a_sub.area IS NULL OR pref_a_sub.area = ba.area)
-                  )
-            )
-        )
-    GROUP BY -- Group to get the max score if multiple preferred areas match an order
-        p.purchase_id, p.total_price, p.status, u.name, ba.division, ba.district, ba.ward, ba.area
-    ORDER BY
-        match_score DESC, -- Order by score (highest first)
-        p.created_at ASC; -- Then by creation date (oldest first for ties)
+        -- Add accepted_at and delivered_at as NULL, matching other shipment fields for consistency
+        NULL AS accepted_at,
+        NULL AS delivered_at,
+        NULL AS shipment_rating,
+        (
+            CASE WHEN pa.area = a.area THEN 1 ELSE 0 END +
+            CASE WHEN pa.ward = a.ward THEN 1 ELSE 0 END +
+            CASE WHEN pa.district = a.district THEN 1 ELSE 0 END +
+            CASE WHEN pa.division = a.division THEN 1 ELSE 0 END
+        ) AS match_score,
+        ROW_NUMBER() OVER (PARTITION BY p.purchase_id ORDER BY
+            (CASE WHEN pa.area = a.area THEN 1 ELSE 0 END +
+             CASE WHEN pa.ward = a.ward THEN 1 ELSE 0 END +
+             CASE WHEN pa.district = a.district THEN 1 ELSE 0 END +
+             CASE WHEN pa.division = a.division THEN 1 ELSE 0 END
+            ) DESC
+        ) AS row_num
+    FROM purchase p
+    JOIN "User" u ON p.buyer_id = u.user_id
+    JOIN address a ON u.address_id = a.address_id
+    LEFT JOIN shipment s ON p.purchase_id = s.purchase_id AND s.shipment_id IS NOT NULL
+    JOIN deliverymanprefarea dmpa ON dmpa.deliveryman_id = $1
+    JOIN address pa ON dmpa.address_id = pa.address_id
+    WHERE s.shipment_id IS NULL -- Only show purchases without an assigned shipment
+)
+SELECT *
+FROM matched_orders
+WHERE row_num = 1
+ORDER BY match_score DESC, purchase_id ASC;
 `;
+
 // --- NEW QUERY: For UNDER SHIPMENT orders (shipments assigned to this deliveryman, not yet delivered) ---
 // These are shipments assigned to the deliveryman with status 'ACCEPTED' or 'Under Shipment'.
 const getUnderShipmentOrdersQuery = `

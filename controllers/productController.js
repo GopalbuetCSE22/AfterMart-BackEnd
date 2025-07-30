@@ -378,6 +378,7 @@ async function getBroughtProducts(req, res) {
 
   try {
     const result = await pool.query(getBroughtProductsQuery, [userId]);
+    console.log('Result:', result.rows);
       console.log('inside the try block of getBroughtProducts');
 
     if (result.rows.length === 0) return res.status(404).json({ message: 'No products found for this user' });

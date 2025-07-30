@@ -40,6 +40,7 @@ const getAvailableOrders = async (req, res) => {
     console.log(`Fetching available orders for deliveryman ID: ${deliveryman_id}`);
     try {
         const result = await pool.query(getAvailableOrdersQuery, [deliveryman_id]);
+        console.log('Available orders:', result.rows);
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Error fetching available orders:', err);
