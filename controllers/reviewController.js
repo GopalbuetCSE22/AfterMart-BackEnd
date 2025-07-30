@@ -61,9 +61,41 @@ exports.addShipmentReview = async (req, res) => {
     console.log('Adding shipment review:', { shipment_id, rating, review });
 
     const result = await insertShipmentReview(shipment_id, rating, review);
+      //from the shipment id we will find the deliveryman id and then update the deliveryman average rating by coutning number of rating of the delivary man with the total rating
+    if (result.rows.length === 0) {
+        return res.status(404).json({
+            error: 'Shipment not found or already reviewed'
+        });
+      }
+      //console.log('Shipment review added:', result.rows[0]);
+      // Update the deliveryman's average rating
+      const deliverymanId = result.rows[0].deliveryman_id;
+      await updateDeliverymanRating(deliverymanId);
     res.status(200).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+const updateDeliverymanRating = async (deliverymanId) => {
+  try {
+    const avgRatingQuery = `
+      SELECT AVG(shipment_rating) AS average_rating
+      FROM shipment
+      WHERE deliveryman_id = $1 AND shipment_rating IS NOT NULL
+    `;
+
+    const avgResult = await pool.query(avgRatingQuery, [deliverymanId]);
+
+    if (avgResult.rows.length > 0) {
+      const averageRating = avgResult.rows[0].average_rating || 0;
+
+      await pool.query(
+        'UPDATE delivery_man SET rating_avg = $1 WHERE deliveryman_id = $2',
+        [averageRating, deliverymanId]
+      );
+    }
+  } catch (err) {
+    console.error("Error updating deliveryman rating:", err);
   }
 };
 

@@ -127,28 +127,62 @@ const acceptPurchase = async (req, res) => {
 
 // Marks a shipment as delivered and updates the associated purchase status.
 const markTheShipmentDelivered = async (req, res) => {
-    const shipmentId = req.params.shipment_id;
-    console.log(`Marking shipment ID: ${shipmentId} as delivered.`);
-    try {
-        // Start a transaction for atomicity
-        await pool.query('BEGIN');
+  const shipmentId = req.params.shipment_id;
+  console.log(`Marking shipment ID: ${shipmentId} as delivered.`);
 
-        const shipmentUpdateResult = await pool.query(markShipmentDeliveredQuery, [shipmentId]);
+  try {
+    // Start a transaction for atomicity
+    await pool.query('BEGIN');
 
-        if (shipmentUpdateResult.rows.length === 0) {
-            await pool.query('ROLLBACK');
-            return res.status(404).json({ message: 'Shipment not found or already delivered.' });
-        }
+    // Update shipment (set status = 'delivered', delivered_at = now)
+    const shipmentUpdateResult = await pool.query(markShipmentDeliveredQuery, [shipmentId]);
 
-        await pool.query(updatePurchaseStatusAfterDeliveryQuery, [shipmentId]);
-
-        await pool.query('COMMIT');
-        res.status(200).json({ message: 'Shipment marked as delivered successfully.', shipment: shipmentUpdateResult.rows[0] });
-    } catch (error) {
-        await pool.query('ROLLBACK'); // Rollback on error
-        console.error('Error marking shipment as delivered:', error);
-        res.status(500).json({ error: 'Internal server error.', details: error.message });
+    if (shipmentUpdateResult.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ message: 'Shipment not found or already delivered.' });
     }
+
+    // Update purchase status to 'delivered'
+    await pool.query(updatePurchaseStatusAfterDeliveryQuery, [shipmentId]);
+
+    // Commit the main transaction
+    await pool.query('COMMIT');
+
+    // Try to update delivery_count separately, non-critical
+    const deliverymanId = shipmentUpdateResult.rows[0].deliveryman_id;
+    updateDeliveryCountOnly(deliverymanId); // Fire-and-forget
+
+    res.status(200).json({
+      message: 'Shipment marked as delivered successfully.',
+      shipment: shipmentUpdateResult.rows[0]
+    });
+
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error('Error marking shipment as delivered:', error);
+    res.status(500).json({ error: 'Internal server error.', details: error.message });
+  }
+};
+const updateDeliveryCountOnly = async (deliverymanId) => {
+  try {
+    const countQuery = `
+      SELECT COUNT(*) AS delivery_count
+      FROM shipment
+      WHERE deliveryman_id = $1 AND delivered_at IS NOT NULL
+    `;
+
+    const result = await pool.query(countQuery, [deliverymanId]);
+    const deliveryCount = result.rows[0].delivery_count || 0;
+
+    await pool.query(
+      'UPDATE delivery_man SET delivery_count = $1 WHERE deliveryman_id = $2',
+      [deliveryCount, deliverymanId]
+    );
+
+  } catch (err) {
+    console.error("Non-critical: Error updating delivery_count:", err.message);
+    // No crash, just log the error
+  }
 };
 
 // Handles changing a deliveryman's password.
