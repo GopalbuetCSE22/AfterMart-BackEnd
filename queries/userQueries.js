@@ -23,7 +23,8 @@ const insertUser = `
 
 const getUnverifiedUsers = `
   SELECT * FROM "User"
-  WHERE isverified = false;
+  WHERE isverified = false
+  ORDER BY created_at DESC;
 `;
 
 const verifyUserById = `

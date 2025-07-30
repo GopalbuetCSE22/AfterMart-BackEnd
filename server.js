@@ -32,6 +32,8 @@ const messageRoutes = require('./routes/messageRoutes.js');
 
 const deliverymanRoutes = require('./routes/deliverymanRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
+const reviewRoutes = require('./routes/reviewRoutes');
+
 
 // connecting to routes
 app.use('/api/users', userRoutes);
@@ -44,6 +46,8 @@ app.use('/api/purchase', purchaseroutes);
 app.use("/api/shipment", shipmentRoutes);
 app.use('/api/uploadImage', imageUploadRoute);
 app.use('/api/stats', statsRoutes);
+app.use('/api/reviews', reviewRoutes);
+
 
 app.use('/api/deliveryman', deliverymanRoutes);
 app.use('/api/messages', messageRoutes);

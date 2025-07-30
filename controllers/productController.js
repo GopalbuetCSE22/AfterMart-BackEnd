@@ -382,7 +382,8 @@ async function getBroughtProducts(req, res) {
 
     if (result.rows.length === 0) return res.status(404).json({ message: 'No products found for this user' });
     res.status(200).json(result.rows);
-    console.log('Brought products for user ID:', userId, 'are:', result.rows);
+    //print the results
+    console.log('Brought products:', result.rows);
   } catch (error) {
     console.error('getBroughtProducts error:', error);
     res.status(500).json({ error: 'Failed to fetch brought products' });

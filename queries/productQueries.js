@@ -154,7 +154,7 @@ const searchProductsAdvancedQuery = `
   ) AS img ON true
 
   WHERE
-    -- This is the crucial change: only apply text search if $1 is not empty
+   
     ($1 = '' OR to_tsvector('english', p.title || ' ' || p.description || ' ' || c.name) @@ plainto_tsquery('english', $1))
     AND ($3::text IS NULL OR c.name ILIKE $3)
     AND p.price BETWEEN $4 AND $5
@@ -342,10 +342,11 @@ const deleteProductImageQuery = `
 
 
 const getBroughtProductsQuery = `
-  SELECT pr.title, pr.price, dm.name ,dm.phone , s.accepted_at,s.status , p.purchase_id, pr.product_id
+  SELECT pr.title,pr.seller_id, pr.price, dm.name ,dm.phone , s.accepted_at,s.status , p.purchase_id, pr.product_id,s.shipment_id,s.deliveryman_id
   FROM purchase p 
   join product pr on p.product_id = pr.product_id
   join shipment s on p.shipment_id = s.shipment_id
+
   LEFT join delivery_man dm on s.deliveryman_id = dm.deliveryman_id
   WHERE p.buyer_id = $1
 `;
