@@ -9,6 +9,7 @@ const {
   addShipmentReview,
   updateShipmentReview,
   getShipmentReviewByUser,
+  getReviewWhenSeller
 } = require('../controllers/reviewController');
 
 // Seller review routes
@@ -21,5 +22,8 @@ router.get('/seller/:productId/:reviewerId', getSellerReviewByReviewer); // Spec
 router.post('/shipment', addShipmentReview);
 router.put('/shipment/:shipmentId', updateShipmentReview);
 router.get('/shipment/:shipmentId/:reviewerId', getShipmentReviewByUser);
+
+
+router.get('/fromSellerInfo/:sellerId', getReviewWhenSeller);
 
 module.exports = router;
